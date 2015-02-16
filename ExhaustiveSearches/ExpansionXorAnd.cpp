@@ -18,6 +18,7 @@ const int Nb = 4;
 
 int  invert(int x);
 int  getNum(int v[]);
+bool isEqual(int a[], int b[]);
 bool allOnes(int v[]);
 void XOR(int c[], int a[], int b[]); // c = a ^ b
 void AND(int d[], int a[], int b[]); // d = a & b 
@@ -51,46 +52,45 @@ int main() {
   do {
     bool isConstant = true;
     int hammingDistance = -1;
-    while(!allOnes(a)) {
-      //    cout << "here in a\n";
-      // cout << "a:"; printReg(a);
-      while(!allOnes(b)) {
-	//      cout << "b:"; printReg(b);
-	//      cout << "here in b\n";
-	//	cout << "here in perm\n";
-	XOR(c,a,b);
-	AND(d,a,b);
+    bool didIt = false;
+
+    bool conditionA = true;
+    bool conditionB = true;
+    
+    while(conditionA) {
+      while(conditionB) {
+	if(isEqual(a,b)) {
+	  incrementArray(b);
+	  continue;
+	}
 	expand(perm, a,expA, b,expB, c,expC, d,expD);
-	/*       	cout << "----------------------\n;"
-	cout << "perm:"; printExp(perm);
-	cout << "a:"; printReg(a); cout << "expA:"; printExp(expA);
-	cout << "b:"; printReg(b); cout << "expB:"; printExp(expB);
-	cout << "c:"; printReg(c); cout << "expC:"; printExp(expC);
-	cout << "d:"; printReg(d); cout << "expD:"; printExp(expD);
-	*/
 	if(hammingDistance == -1) {
-	  hammingDistance = countDistance(expD, expA);
+	  hammingDistance = countDistance(expA, expB);
 	}
 	else {
-	  if(hammingDistance != countDistance(expD, expA)) {
+	  if(hammingDistance != countDistance(expA,expB)) {
 	    isConstant = false;
-	    break; // bad looking, but a bit faster.
+	    break;
 	  }
-	}
+	}	
+	conditionB = (!allOnes(b));
 	incrementArray(b);
       }
-      if(isConstant == false) {
-	break; // bad looking, but a bit faster.
-      }
       makeZero(b);
+      if(isConstant == false) {
+	break;
+      }
+      conditionA = (!allOnes(a));
       incrementArray(a);
     }
     makeZero(a);
-    if(isConstant) {
+    if(isConstant){
+      cout << "perm for constant:";
       printExp(perm);
+      cout << "!!!!!!!!!!!!!!!!!!!!SOLUTION: Hamming Distance Xor:"
+	   << hammingDistance << "\n------\n";
     }
   }while(next_permutation(perm, perm + 2*Nb));
-  
   return 0;
 }
 
@@ -223,4 +223,14 @@ void AND(int d[], int a[], int b[]) {
   for(int i = 0; i < Nb; ++i) {
     d[i] = a[i] & b[i];
   }
+}
+
+bool isEqual(int a[], int b[]) {
+  bool truth = true;
+  for(int i = 0; i < Nb; ++i) {
+    if(a[i] != b[i]) {
+      truth = false;
+    }
+  }
+  return truth;
 }
