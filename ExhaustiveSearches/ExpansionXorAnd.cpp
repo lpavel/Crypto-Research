@@ -17,20 +17,29 @@ using namespace std;
 const int Nb = 4;
 
 int  invert(int x);
-int  getNum(const int& v[]);
+int  getNum(int v[]);
 bool allOnes(int v[]);
-void XOR(int &c[], const int& a[], const int& b[]);
-void AND(int &d[], const int& a[], const int& b[]);
-void getArray(int& numArr[], const int& num);
-void incrementArray(int& v[]);
-void makeZero(int& v[]);
-void expand(const int& perm[],
-	    const int& a[], int& expA[],
-	    const int& b[], int& expB[],
-	    const int& c[], int& expC[],
-	    const int& d[], int& expD[]);
+void XOR(int c[], int a[], int b[]); // c = a ^ b
+void AND(int d[], int a[], int b[]); // d = a & b 
+void getArray(int numArr[], int num);
+void incrementArray(int v[]);
+void makeZero(int v[]);
+void expand(int perm[],
+	    int a[], int expA[],
+	    int b[], int expB[],
+	    int c[], int expC[],
+	    int d[], int expD[]);
+void printPerm(int perm[]);
 
-
+int countDistance(int exp1[], int exp2[]) {
+  int dist = 0;
+  for(int i = 0; i < 2*Nb; ++i) {
+    if(exp1[i] != exp2[i]) {
+      ++dist;
+    }
+  }
+  return dist;
+}
 
 int main() {
   int a[Nb] = {0,0,0,0} , b[Nb] = {0,0,0,0}; 
@@ -40,16 +49,22 @@ int main() {
     
   while(allOnes(a) != 0) {
     bool isConstant = true;
+    int hammingDistance = -1;
     while(allOnes(b) != 0) {
       sort(perm, perm + 2 * Nb);
       do {
 	XOR(c,a,b);
 	AND(d,a,b);
 	expand(perm, a,expA, b,expB, c,expC, d,expD);
-	if(!constDistance(expD, expA)) {
-	  isConstant = false;
+	if(hammingDistance == -1) {
+	  hammingDistance = countDistance(expD, expA);
 	}
-      }while(next_permutation(perm, prem + 2*Nb));
+	else {
+	  if(hammingDistance != countDistance(expD, expA)) {
+	    isConstant = false;
+	  }
+	}
+      }while(next_permutation(perm, perm + 2*Nb));
       incrementArray(b);
     }
     if(isConstant) {
@@ -61,12 +76,20 @@ int main() {
   return 0;
 }
 
+void printPerm(int perm[]) {
+  cout << "perm:";
+  for(int i = 0; i < 2*Nb; ++i) {
+    cout << perm[i];
+  }
+  cout << '\n';
+}
+
 int invert(int x) {
   return (x==0)? (1) : (0);
 }
 
 bool allOnes(int v[]) {
-  boot truth = true;
+  bool truth = true;
   for(int i =0 ; i < Nb; ++i) {
     if(v[i] == 0){
       truth = false;
@@ -75,7 +98,7 @@ bool allOnes(int v[]) {
   return truth;
 }
 
-void incrementArray(int& v[]) {
+void incrementArray(int v[]) {
   int carry = 1; // start with 1 which basically means increment
   for(int i = 0; i < Nb - 1; ++i) {
     if(carry == 1) {
@@ -88,14 +111,15 @@ void incrementArray(int& v[]) {
   }
 }
 
-void makeZero(int& v[]) {
+void makeZero(int v[]) {
   for(int i = 0; i < Nb; v[i++] = 0);
 }
 
-void expand(const int& perm[],int& a[], int& expA[], int& b[], int& expB[],
-	    int& c[], int& expC[], int& d[], int& expD[]) {
+void expand(int perm[],
+	    int a[], int expA[], int b[], int expB[],
+	    int c[], int expC[], int d[], int expD[]) {
   for(int i = 0; i < Nb; ++i) {
-    switch(perm[i]): {
+    switch(perm[i]) {
       case 0: {
 	expA[i] = a[0]; expB[i] = b[0];
 	expC[i] = c[0];	expD[i] = d[0];
@@ -140,7 +164,7 @@ void expand(const int& perm[],int& a[], int& expA[], int& b[], int& expB[],
   }
 }
 
-int getNum(const int& v[]) {
+int getNum(int v[]) {
   int num = 0;
   for(int i = 0; i < Nb; ++i) {
     num = num * 2 + v[i];
@@ -148,7 +172,7 @@ int getNum(const int& v[]) {
   return num;
 }
 
-void getArray(int& numArr[], const int& num) {
+void getArray(int numArr[], int num) {
   for(int i = 0; num; ++i) {
     numArr[i] = num % 10;
     num /= 10;
@@ -157,7 +181,7 @@ void getArray(int& numArr[], const int& num) {
   reverse(numArr, numArr + Nb);
 }
 
-void XOR(int &c[], const int& a[], const int& b[]) {
+void XOR(int c[], int a[], int b[]) {
   int numA = getNum(a);
   int numB = getNum(b);
   int numC = numA ^ numB;
@@ -166,7 +190,7 @@ void XOR(int &c[], const int& a[], const int& b[]) {
 }
 
 
-void AND(int &d[], const int& a[], const int& b[]) {
+void AND(int d[], int a[], int b[]) {
   int numA = getNum(a);
   int numB = getNum(b);
   int numD = numA & numB;
