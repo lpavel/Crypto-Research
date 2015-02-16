@@ -29,7 +29,8 @@ void expand(int perm[],
 	    int b[], int expB[],
 	    int c[], int expC[],
 	    int d[], int expD[]);
-void printPerm(int perm[]);
+void printExp(int perm[]);
+void printReg(int arr[]);
 
 int countDistance(int exp1[], int exp2[]) {
   int dist = 0;
@@ -47,41 +48,65 @@ int main() {
   int expA[2*Nb], expB[2*Nb], expC[2*Nb], expD[2*Nb];
   int perm[2*Nb] = {0, 1, 2, 3, 4, 5, 6, 7};
     
-  while(allOnes(a) != 0) {
+  do {
     bool isConstant = true;
     int hammingDistance = -1;
-    while(allOnes(b) != 0) {
-      sort(perm, perm + 2 * Nb);
-      do {
+    while(!allOnes(a)) {
+      //    cout << "here in a\n";
+      // cout << "a:"; printReg(a);
+      while(!allOnes(b)) {
+	//      cout << "b:"; printReg(b);
+	//      cout << "here in b\n";
+	//	cout << "here in perm\n";
 	XOR(c,a,b);
 	AND(d,a,b);
 	expand(perm, a,expA, b,expB, c,expC, d,expD);
+	/*       	cout << "----------------------\n;"
+	cout << "perm:"; printExp(perm);
+	cout << "a:"; printReg(a); cout << "expA:"; printExp(expA);
+	cout << "b:"; printReg(b); cout << "expB:"; printExp(expB);
+	cout << "c:"; printReg(c); cout << "expC:"; printExp(expC);
+	cout << "d:"; printReg(d); cout << "expD:"; printExp(expD);
+	*/
 	if(hammingDistance == -1) {
 	  hammingDistance = countDistance(expD, expA);
 	}
 	else {
 	  if(hammingDistance != countDistance(expD, expA)) {
 	    isConstant = false;
+	    break; // bad looking, but a bit faster.
 	  }
 	}
-      }while(next_permutation(perm, perm + 2*Nb));
-      incrementArray(b);
+	incrementArray(b);
+      }
+      if(isConstant == false) {
+	break; // bad looking, but a bit faster.
+      }
+      makeZero(b);
+      incrementArray(a);
     }
+    makeZero(a);
     if(isConstant) {
-      printPerm(perm);
+      printExp(perm);
     }
-    makeZero(b);
-  }
+  }while(next_permutation(perm, perm + 2*Nb));
   
   return 0;
 }
 
-void printPerm(int perm[]) {
-  cout << "perm:";
-  for(int i = 0; i < 2*Nb; ++i) {
+void printReg(int arr[]) {
+  for(int i = 0; i < Nb; ++i) {
+    cout << arr[i];
+  }
+  cout << "\n";
+}
+
+void printExp(int perm[]) {
+  for(int i = 0; i < (2*Nb); ++i) {
+    //    cout << "i:" << i << '\n';
     cout << perm[i];
   }
-  cout << '\n';
+  cout << "\n";
 }
 
 int invert(int x) {
@@ -108,6 +133,12 @@ void incrementArray(int v[]) {
       v[i] = 0;
       carry = 1;
     }
+    else {
+      carry = 0;
+    }
+  }
+  if(carry == 1) {
+    v[Nb - 1] = 1;
   }
 }
 
@@ -118,7 +149,7 @@ void makeZero(int v[]) {
 void expand(int perm[],
 	    int a[], int expA[], int b[], int expB[],
 	    int c[], int expC[], int d[], int expD[]) {
-  for(int i = 0; i < Nb; ++i) {
+  for(int i = 0; i < 2*Nb; ++i) {
     switch(perm[i]) {
       case 0: {
 	expA[i] = a[0]; expB[i] = b[0];
@@ -182,18 +213,14 @@ void getArray(int numArr[], int num) {
 }
 
 void XOR(int c[], int a[], int b[]) {
-  int numA = getNum(a);
-  int numB = getNum(b);
-  int numC = numA ^ numB;
-
-  getArray(c, numC);
+  for(int i = 0; i < Nb; ++i) {
+    c[i] = a[i] ^ b[i];
+  }
 }
 
 
 void AND(int d[], int a[], int b[]) {
-  int numA = getNum(a);
-  int numB = getNum(b);
-  int numD = numA & numB;
-
-  getArray(d, numD);
+  for(int i = 0; i < Nb; ++i) {
+    d[i] = a[i] & b[i];
+  }
 }
