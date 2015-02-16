@@ -1,5 +1,4 @@
 all: expansion
 
 expansion:
-	g++ ExpansionXorAnd.cpp -o ExpansionXorAdd
-
+	g++ ExpansionXorAnd.cpp -o ExpansionXorAnd
