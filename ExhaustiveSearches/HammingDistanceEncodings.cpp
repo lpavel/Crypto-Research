@@ -45,16 +45,15 @@ int main() {
   int permB[2*Nb] = {0, 1, 2, 3, 4, 5, 6, 7};  
 
   do {
+    bool isConstant = true;
+    int hammingDistance = -1;
+    
     do {
       if(isEqual(permA, permB, 2*Nb)) {
 	continue;
       }
-      bool isConstant = true;
-      int hammingDistance = -1;
-      
       bool conditionA = true;
       bool conditionB = true;
-    
       while(conditionA) {
 	while(conditionB) {
 	  expand(permA, permB, a, expA, b, expB);
