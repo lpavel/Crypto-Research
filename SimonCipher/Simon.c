@@ -24,8 +24,9 @@ typedef uint32_t word;
 void readKeyBlock(word key[], word block[]);
 void keyExpansion(word key[]);
 word S(word w, int pos);
-void printBlock(word block[]);
+void printBlock(word block[], char* status);
 void encrypt(word *xp, word *yp, word key[]);
+void decrypt(word *xp, word *yp, word key[]);
 
 int main() {
   word key[keySize * T];
@@ -34,8 +35,10 @@ int main() {
 
   keyExpansion(key);
   encrypt(&block[0], &block[1], key);
+  printBlock(block, "encrypted");
 
-  printBlock(block);
+  decrypt(&block[0], &block[1], key);
+  printBlock(block, "decrypted");
   
   return 0;
 }
@@ -62,7 +65,8 @@ void keyExpansion(word key[]) {
   /*
   for(int i = 0; i < T; ++i) {
     printf("%x \n", key[i]);
-    }*/
+  }
+  */
 }
 
 void encrypt(word *xp, word *yp, word key[]) {
@@ -73,6 +77,17 @@ void encrypt(word *xp, word *yp, word key[]) {
     y = tmp;
   }
   *xp = x; *yp = y;
+}
+
+void decrypt(word *xp, word *yp, word key[]){
+  word x = *xp, y = *yp;
+  for(int i = T - 1; i >= 0 ; --i) {
+    word tmp = x;
+    x = y;
+    y = tmp ^ key[i] ^ S(y,2) ^ (S(y,1) & S(y,8));
+  }
+  *xp = x;
+  *yp = y;
 }
 
 void readKeyBlock(word key[], word block[]) {
@@ -86,6 +101,6 @@ void readKeyBlock(word key[], word block[]) {
   block[1] = 0x20646e75;
   }
 
-void printBlock(word block[]) {
-  printf("encrypted: %x %x\n", block[0], block[1]);
+void printBlock(word block[], char* status) {
+  printf("%s: %x %x\n", status, block[0], block[1]);
 }
