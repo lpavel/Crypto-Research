@@ -28,7 +28,7 @@ const uint32_t z[5][62] = {
 word S(word w, int pos) {
   int numbits = sizeof(w) * BYTESIZE;
   if(pos >= 0) {
-    return (w << pos) | (w >> (numbits - pos)); 
+    return (w << pos) | (w >> (numbits - pos));
   }
   else {
     return (w >> (-pos)) | (w << (numbits - (-pos)));
@@ -81,7 +81,7 @@ void readKeyBlock(word key[], word block[]) {
 
   block[0] = 0x656b696c;
   block[1] = 0x20646e75;
-  }
+}
 
 void printBlock(word block[], char* status) {
   printf("%s: %x %x\n", status, block[0], block[1]);
