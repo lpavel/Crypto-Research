@@ -27,7 +27,7 @@
 }
 \IEEEauthorblockA{Worcester Polytechnic Institute, 
 Worcester, MA 01609, USA\\
-Email: \texttt{\{your email addresses\}@wpi.edu}
+Email: \texttt{\{lpavel, jrmoore\}@wpi.edu}
 }}
 \maketitle
 
@@ -39,9 +39,9 @@ Email: \texttt{\{your email addresses\}@wpi.edu}
 
 \section{Motivation}
 
-Once the internet takes over most of the devices people interact with, the concern of keeping information private becomes higher. Moreover, the computational limitations of small devices need ciphers that do not require very complex operations such as matrix multiplication in AES, and that also do not use very much memory.
+Once the internet takes over most of the devices people interact with, the concern of keeping information private becomes higher. Also small embedded devices need to have low costs and therefore do not have very high computational power. Thus small devices need ciphers that do not require very complex operations such as matrix multiplication in AES, and that also do not use very much memory.
 
-Simon is one of the lightweight ciphers introduced by the NSA could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in all operations.  
+Simon is one of the lightweight ciphers introduced by the NSA could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in all operations. The platform used is a Stellaris LM3SXXXX that has a low frequency of 8MHz which will make Differential Power Analysis Attacks much easier to observe. 
 
 List of goals:
 \begin{itemize}
