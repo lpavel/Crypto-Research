@@ -41,7 +41,14 @@ Email: \texttt{\{lpavel, jrmoore\}@wpi.edu}
 
 Once the internet takes over most of the devices people interact with, the concern of keeping information private becomes higher. Also small embedded devices need to have low costs and therefore do not have very high computational power. Thus small devices need ciphers that do not require very complex operations such as matrix multiplication in AES, and that also do not use very much memory.
 
-Simon is one of the lightweight ciphers introduced by the NSA could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in all operations. The platform used is a Stellaris LM3SXXXX that has a low frequency of 8MHz which will make Differential Power Analysis Attacks much easier to observe. 
+Simon is one of the lightweight ciphers introduced by the NSA could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in all operations.
+
+The development kit used is a Stellaris LM3S8962 that has an ARM processor that runs at 50MHz. Because Side Channel Attacks are much easier to be done at a lower frequency, it was decided to use the board at a 5MHz clock rate. The motivation for choosing this platform was the popularity of ARM processors. Nowadays ARM processors are used in a very wide variety of products because of their very low power consumption.
+
+Managed to cite ~\cite{BEPrince} . Awesome.
+Managed to cite ~\cite{StandaertAdvances} . Awesome.
+Managed to cite ~\cite{KocherDPA} . Awesome.
+Managed to cite ~\cite{KocherIntroDPA} . Awesome.
 
 List of goals:
 \begin{itemize}
@@ -66,6 +73,8 @@ We will stick to the following timeline:
 \end{itemize}
 
 \section{Background}\label{sec:background}
+
+
 \todo{You should find and describe related work early on. Know what other people have done.}
 
 \section{Work Description}
