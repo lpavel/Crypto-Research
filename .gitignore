@@ -27,3 +27,15 @@
 *.i*86
 *.x86_64
 *.hex
+
+# Latex stuff
+*.pdf
+*.bbl
+*.blg
+*.log
+*.bst
+*.aux
+
+# backups
+*~
+*.doc
