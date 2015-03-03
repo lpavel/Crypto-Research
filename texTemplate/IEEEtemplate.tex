@@ -20,10 +20,10 @@
 \IEEEoverridecommandlockouts
 \begin{document}
 
-\title{Name of your Project goes here}
+\title{Balanced Encoding of a Lightweight Cipher on an ARM Processor}
 
 
-\author{\IEEEauthorblockN{Your names here
+\author{\IEEEauthorblockN{Laurentiu Pavel, Julian R Moore
 }
 \IEEEauthorblockA{Worcester Polytechnic Institute, 
 Worcester, MA 01609, USA\\
@@ -41,14 +41,9 @@ Email: \texttt{\{lpavel, jrmoore\}@wpi.edu}
 
 Once the internet takes over most of the devices people interact with, the concern of keeping information private becomes higher. Also small embedded devices need to have low costs and therefore do not have very high computational power. Thus small devices need ciphers that do not require very complex operations such as matrix multiplication in AES, and that also do not use very much memory.
 
-Simon is one of the lightweight ciphers introduced by the NSA could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in all operations.
+Simon is one of the lightweight ciphers introduced by the NSA that could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in all operations.
 
-The development kit used is a Stellaris LM3S8962 that has an ARM processor that runs at 50MHz. Because Side Channel Attacks are much easier to be done at a lower frequency, it was decided to use the board at a 5MHz clock rate. The motivation for choosing this platform was the popularity of ARM processors. Nowadays ARM processors are used in a very wide variety of products because of their very low power consumption.
-
-Managed to cite ~\cite{BEPrince} . Awesome.
-Managed to cite ~\cite{StandaertAdvances} . Awesome.
-Managed to cite ~\cite{KocherDPA} . Awesome.
-Managed to cite ~\cite{KocherIntroDPA} . Awesome.
+The development kit used is a Stellaris LM3S8962 that has an ARM Cortex M3 processor that runs at 50MHz. Because Side Channel Attacks are much easier to be done at a lower frequency, it was decided to use the board at a 5MHz clock rate. The motivation for choosing this platform was the popularity of ARM processors that are nowadays used in a very wide variety of products because of their very low power consumption.
 
 List of goals:
 \begin{itemize}
@@ -74,10 +69,16 @@ We will stick to the following timeline:
 
 \section{Background}\label{sec:background}
 
+In the second part of the 90's, it became obvious that hardware related cryptanalysis is very powerful and can break some mathematically strong ciphers by measuring hardware characteristics such as time, power consumption, temperature, etc. Kocher introduced the Timing Attack in 1996 ~\cite{KocherTiming} and then the more powerful Differential Power Analysis in 1999 ~\cite{KocherDPA} , reason why cryptography needed to be thought in such a way that physical access to a device does not allow Side Channel Attacks the possibility of discovering the key of the cipher.
 
-\todo{You should find and describe related work early on. Know what other people have done.}
+There are several approaches to protect agains SCA, most of them not trying to reduce the leakage, but making it unexploitable by randomizing it, some of the more popular ones being shuffling ~\cite{WangShuffling} , random delays ~\cite{CoronRandomDelays} , etc. Another interesting approach is presented in ~\cite{BEPrince} and ~\cite{ServantAES} where the aim is to obatin constant leakage during all the operations of the cipher which does not allow an attacker to gather same information when phyiscally attacking it which is not exploitable. The idea behind both of them is to use a bigger number of bits to represent the numbers in such a way that the Hamming Weight will always be constant and therefore not exploitable. Moreover, in ~\cite{BEPrince} it is presented an encoding of the Prince cipher that obatins constant leakage on the Hamming Distance Model as well.
+
+The good results of the constant leakage implementation served us as a motivation for further investigation. It is obvious that an encoding that uses more bits will need to use much more memory that may not be available in most platforms. Ciphers such as AES consisting of large Sboxes and other complex operations such as matrix multiplications suffer big losses in terms of speed, but especially in terms of memory. Using an encoding that doubles the number of bytes would transform the AES Sbox from $16 \times 16 = 256$ 1-byte numbers ($=256$B), into a $32 \times 32 = 1024$ 2-byte numbers ($\approx2$KB) which is already more memory than most low-priced microcontrollers have. For instance, in the much smarter implementation of AES presented in ~\cite{ServantAES} , the speed loss has a factor of 4.2, but the memory loss has a factor of 8.57, which shows how challenging it is to obtain good performance on traditional ciphers.
+
+In this paper we investigate whether constant leakage implementation on lightweight ciphers are feasable. We chose to implement Simon ~\cite{Beaulieu_Simon} which has very small memory requirements on a Stellaris LM3S8962. Since the board offers 256-KB Flash and 64-KB SRAM, memory will be sufficient for many different encodings. The goal is to implement 2 versions of Simon: Simon 64/128 (64-bit block size and 128-bit key size) and Simon 128/128 (128-bit block size and 128-bit key size) in 3 different ways: one unprotected implementation, one implementation that offers constant Hamming Weight leakage, and lastly one implementation that offers both constant Hamming Weight and constant Hamming Distance leagake. In the end we want to compare the leakages among the three implementations along with a comparrison of the memory and speed performance in each case.
 
 \section{Work Description}
+
 Here you describe the work you have performed, problems you have solved and methods you have used. There is a fine balance between brevity and conciseness and ensuring that other people, if investing the time, would be able to reproduce your results given this description.
 
 
