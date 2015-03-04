@@ -2,10 +2,16 @@
 #include<string.h>
 #include<stdlib.h>
 #include<inttypes.h>
-#include"Simon.h"
+#include"simon.h"
 
 const int BYTESIZE = 8;
+const int HALFWORD = sizeof(word) * BYTESIZE / 2;
 const int blockSize = 2;
+const int firstHalf = 0;
+const int secondHalf = 1;
+
+#define ONE_ZERO 2
+#define ZERO_ONE 1
 
 #if (WORDSIZE == 32)
 const int keySize = 4;
@@ -107,5 +113,30 @@ void printBlock(word block[blockSize][], char* status) {
   printf("%s: %llx %llx\n", status, b1, b2);
 }
 
-void transformKeyBlock(word key[keySize * T][], word block[blockSize][])
+//stick to the definition:
+// 1 -> 10
+// 0 -> 01
+word expandEncoding(word w) {
+  word newWord = 0;
+  for(int i = 0; i < HALFOWRD; ++i) {
+    newWord <<= 2;
+    newWord |= ((w & 1) == 1)
+      ? ONE_ZERO
+      : ZERO_ONE;
+  }
+  return newWord;
+}
 
+// asumes regular input and creates 
+void transformKeyBlock(word key[keySize * T][], word block[blockSize][]) {
+  // first transform key
+  for(int i = 0; i < keySize; ++i) {
+    key[i][firstHalf]  = getDoubleEncoding(key[i]);
+    key[i][secondHalf] = getDoubleEncoding(key[i] >> HALFWORD);
+  }
+  // now transform block
+  for(int i = 0; i < blockSize; ++i) {
+    block[i][firstHalf]  = getDoubleEncoding(block[i]);
+    block[i][secondHalf] = getDoubleEncoding(block[i] >> HALFWORD);
+  }
+}

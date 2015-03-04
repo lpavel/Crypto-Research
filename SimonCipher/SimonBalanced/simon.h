@@ -21,5 +21,5 @@ word S(word w, int pos);
 void printBlock(word block[], char* status);
 void encrypt(word *xp, word *yp, word key[]);
 void decrypt(word *xp, word *yp, word key[]);
-
+word expandEncoding(word w);
 #endif
