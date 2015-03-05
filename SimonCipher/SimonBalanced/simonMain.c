@@ -18,10 +18,10 @@ int main() {
   readKeyBlock64(key, block);
 #endif
 
-  printBlock(block, "initial");
+  printBlockInitial(block, "initial");
   transformKeyBlock(key,Block);
-  printBlock(block, "initial Transformed");
-  
+  printBlockDouble(block, "initial Transformed");
+  /*
   
   keyExpansion(key);
   encrypt(&block[0], &block[1], key);
@@ -29,6 +29,6 @@ int main() {
 
   decrypt(&block[0], &block[1], key);
   printBlock(block, "decrypted");
-  
+  */
   return 0;
 }

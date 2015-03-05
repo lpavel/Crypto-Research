@@ -12,6 +12,9 @@ const int secondHalf = 1;
 
 #define ONE_ZERO 2
 #define ZERO_ONE 1
+#define TRUE  1
+#define FALSE 0
+
 
 #if (WORDSIZE == 32)
 const int keySize = 4;
@@ -107,11 +110,42 @@ void readKeyBlock64(word key[keySize * T][], word block[blockSize][]) {
   block[1] = 0x7469206564616d20;
 }
 
-void printBlock(word block[blockSize][], char* status) {
-  unsigned long long b1 = block[0];
-  unsigned long long b2 = block[1];
-  printf("%s: %llx %llx\n", status, b1, b2);
+void printBlockHex(word block[blockSize][], char* status) {
+  printf("%s: ", status);
+  for(int i = 0; i < blockSize; ++i) {
+    printf("%llx ", block[i][firstHalf]);
+  }
+  printf("\n");
 }
+
+void printWordBits(word w, int isspace) {
+  for(int i = sizeof(blockSize) * BYTESIZE - 1; i >= 0; --i) {
+    if(isspace) {
+      printf("%d ", block[j][fistHalf] & (1 << i));
+    }
+    else {
+      printf("%d", block[j][fistHalf] & (1 << i));
+    }
+  }
+}
+
+void printBlockInitialBits(word block[blockSize][], char* status) {
+  for(int j = 0; j < blockSize; ++j) {
+    printf("block[%d]:",j);
+    printWordBits(block[j][firstHalf], TRUE);
+    printf("\n");
+  }
+}
+
+void printBlockDoubleBits(word block[blockSize][], char* status) {
+  for(int j = 0; j < blockSize; ++j) {
+    printf("block[%d]:",j);
+    printWordBits(block[j][firstHalf], FALSE);
+    printWordBits(block[j][secondHalf], FALSE);
+    printf("\n");
+  }
+}
+
 
 //stick to the definition:
 // 1 -> 10
