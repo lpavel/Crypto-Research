@@ -21,10 +21,11 @@ int main() {
   printBlockInitialBits(block, "initial");
   transformKeyBlock(key, block);
   printBlockDoubleBits(block, "initial Transformed");
-  /*
+  
   
   keyExpansion(key);
-  encrypt(&block[0], &block[1], key);
+  
+  /*  encrypt(&block[0], &block[1], key);
   printBlock(block, "encrypted");
 
   decrypt(&block[0], &block[1], key);

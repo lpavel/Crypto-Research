@@ -18,7 +18,7 @@ void readKeyBlock32(word key[][2], word block[][2]);
 void readKeyBlock64(word key[][2], word block[][2]);
 
 void keyExpansion(word key[][2]);
-word S(word w, int pos);
+void S(word w[2], word dest[2], int pos);
 
 void transformKeyBlock(word key[][2], word block[][2]);
 
@@ -26,6 +26,15 @@ void printBlockHex(word block[][2], char* status);
 void printWordBits(word w, int isspac);
 void printBlockInitialBits(word block[][2], char* status);
 void printBlockDoubleBits (word block[][2], char* status);
+
+
+void and(word x[2], word y[2], word dest[2]);
+void xor(word x[2], word y[2], word dest[2]);
+void not(word w[2], word dest[2]);
+word andWord(word x, word y);
+word xorWord(word x[2], word y[2]);
+word notWord(word w);
+
 
 void encrypt(word *xp, word *yp, word key[][2]);
 void decrypt(word *xp, word *yp, word key[][2]);

@@ -42,35 +42,48 @@ const uint32_t z[5][62] = {
    0,0,1,0,1,1,1,0,0,0,0,1,1,0,0,1,0,1,0,0,1,0,0,1,1,1,0,1,1,1,1}
 };
 
-word S(word w, int pos) {
-  int numbits = sizeof(w) * BYTESIZE;
+void S(word w[2], word dest[2], int pos) {
+  word numbits = sizeof(word) * BYTESIZE;
   if(pos >= 0) {
-    return (w << pos) | (w >> (numbits - pos));
+    word carry1 = w[firstHalf]  >> (numbits - pos);
+    word carry2 = w[secondHalf] >> (numbits - pos);
+    dest[firstHalf]  = (w[firstHalf] << pos) | carry2; 
+    dest[secondHalf] = (w[secondHalf] << pos) | carry1;
   }
   else {
-    return (w >> (-pos)) | (w << (numbits - (-pos)));
+    word carry1 = w[firstHalf] << (numbits - (-pos));
+    word carry2 = w[secondHalf] << (numbits - (-pos));
+    dest[firstHalf] = (w[firstHalf] >> (-pos)) | carry2;
+    dest[secondHalf] = (w[secondHalf] >> (-pos)) | carry1;
   }
 }
 
-/* // TODO: needs to be updated */
-/* void keyExpansion(word key[keySize * T][2]) { */
-/*   for(int i = m; i < T; ++i) { */
-/*     word tmp = S(key[i-1],-3); */
-/*     if(m==4) { */
-/*       tmp ^= key[i-3]; */
-/*     } */
-/*     tmp ^= S(tmp, -1); */
-/*     key[i] = ~key[i-m] ^ tmp ^ z[j][(i-m) % 62] ^ 3; */
-/*   } */
-/*   /\*  for(int i = 0; i < T; ++i) { */
-/*     printf("%x \n", key[i]); */
-/*     }*\/ */
-/* } */
+// TODO: needs to be updated
+void keyExpansion(word key[keySize * T][2]) {
+  for(int i = m; i < T; ++i) {
+    word tmp[2];
+    S(key[i-1], tmp,-3);
+    if(m==4) {
+      xor(tmp, key[i-3], tmp);
+    }
+    word retS[2]; S(tmp, retS, -1);
+    xor(tmp, retS , tmp);
+    word var1[2], var2[2], notKey[2];
+    not(key[i-m], notKey);
+    
+    xor(notKey, tmp, var1);
+    xor(z[j][(i-m) % 62], 3, var2); // still need to do this modulo shit
+    xor(var1, var2, key[i]);
+  }
+  /*  for(int i = 0; i < T; ++i) {
+    printf("%x \n", key[i]);
+    }*/
+}
 
 /*
 // TODO: needs to be updated
-void encrypt(word *xp, word *yp, word key[]) {
-  word x = *xp, y = *yp;
+void encrypt(word *xp[], word *yp[], word key[]) {
+  word x[] = *xp, y[] = *yp;
   for(int i = 0; i < T; ++i) {
     word tmp = x;
     x = y ^ (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i];
@@ -78,7 +91,8 @@ void encrypt(word *xp, word *yp, word key[]) {
   }
   *xp = x; *yp = y;
 }
-
+*/
+/*
 // TODO: needs to be updated
 void decrypt(word *xp, word *yp, word key[]){
   word x = *xp, y = *yp;
@@ -190,3 +204,63 @@ void transformKeyBlock(word key[keySize * T][2], word block[blockSize][2]) {
     block[i][secondHalf] = expandEncoding(auxBlock >> HALFWORD);
   }
 }
+
+word andWord(word x, word y) {
+  word newWord = 0;
+  word two = 2;
+  for(int i = 0; i < HALFWORD; ++i) {
+    word mid = x & y;
+    if(mid & 1) {
+      word append = (ONE_ZERO << (two*i)); 
+      newWord |= append;
+    }
+    else{
+      word append = (ZERO_ONE << (two*i));
+      newWord |= append;
+    }
+    x >>= 2;
+    y >>= 2;
+  }
+  return newWord;
+}
+
+word xorWord(word x[2], word y[2]) {
+  word newWord = 0;
+  word two = 2;
+  for(int i = 0; i < HALFWORD; ++i) {
+    word mid = x ^ y;
+    if(mid & 1) {
+      word append = (ONE_ZERO << (two*i)); 
+      newWord |= append;
+    }
+    else{
+      word append = (ZERO_ONE << (two*i));
+      newWord |= append;
+    }
+    x >>= 2;
+    y >>= 2;
+  }
+  return newWord;  
+}
+
+word notWord(word w) {
+  uint64_t maxUInt = 0xffffffffffffffff;
+  word maxWord = (word) maxUInt;
+  return w ^ maxWord;
+}
+
+void not(word w[2], word dest[2]) {
+  dest[firstHalf] = notWord(w[firstHalf]);
+  dest[secondHalf] = notWord(w[secondHalf]);
+}
+
+void and(word x[2], word y[2], word dest[2]) {
+  dest[firstHalf]  = andWord(x[firstHalf], y[firstHalf]);
+  dest[secondHalf] = andWord(x[secondHalf], y[secondHalf]);
+}
+
+void xor(word x[2], word y[2], word dest[2]) {
+  dest[firstHalf]  = xorWord(x[firstHalf], y[firstHalf]);
+  dest[secondHalf] = xorWord(x[secondHalf], y[secondHalf]);
+}
+
