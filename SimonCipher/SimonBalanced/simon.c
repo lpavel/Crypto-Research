@@ -9,9 +9,9 @@ const int HALFWORD = sizeof(word) * BYTESIZE / 2;
 const int blockSize = 2;
 const int firstHalf = 0;
 const int secondHalf = 1;
+const word ONE_ZERO = 2;
+const word ZERO_ONE = 1;
 
-#define ONE_ZERO 2
-#define ZERO_ONE 1
 #define TRUE  1
 #define FALSE 0
 
@@ -52,21 +52,22 @@ word S(word w, int pos) {
   }
 }
 
-// TODO: needs to be updated
-void keyExpansion(word key[keySize * T][]) {
-  for(int i = m; i < T; ++i) {
-    word tmp = S(key[i-1],-3);
-    if(m==4) {
-      tmp ^= key[i-3];
-    }
-    tmp ^= S(tmp, -1);
-    key[i] = ~key[i-m] ^ tmp ^ z[j][(i-m) % 62] ^ 3;
-  }
-  /*  for(int i = 0; i < T; ++i) {
-    printf("%x \n", key[i]);
-    }*/
-}
+/* // TODO: needs to be updated */
+/* void keyExpansion(word key[keySize * T][2]) { */
+/*   for(int i = m; i < T; ++i) { */
+/*     word tmp = S(key[i-1],-3); */
+/*     if(m==4) { */
+/*       tmp ^= key[i-3]; */
+/*     } */
+/*     tmp ^= S(tmp, -1); */
+/*     key[i] = ~key[i-m] ^ tmp ^ z[j][(i-m) % 62] ^ 3; */
+/*   } */
+/*   /\*  for(int i = 0; i < T; ++i) { */
+/*     printf("%x \n", key[i]); */
+/*     }*\/ */
+/* } */
 
+/*
 // TODO: needs to be updated
 void encrypt(word *xp, word *yp, word key[]) {
   word x = *xp, y = *yp;
@@ -89,28 +90,28 @@ void decrypt(word *xp, word *yp, word key[]){
   *xp = x;
   *yp = y;
 }
+*/
+void readKeyBlock32(word key[][2], word block[][2]) {
 
-void readKeyBlock32(word key[], word block[]) {
+  key[3][firstHalf] = 0x1b1a1918;
+  key[2][firstHalf] = 0x13121110;
+  key[1][firstHalf] = 0x0b0a0908;
+  key[0][firstHalf] = 0x03020100;
 
-  key[3] = 0x1b1a1918;
-  key[2] = 0x13121110;
-  key[1] = 0x0b0a0908;
-  key[0] = 0x03020100;
-
-  block[0] = 0x656b696c;
-  block[1] = 0x20646e75;
+  block[0][firstHalf] = 0x656b696c;
+  block[1][firstHalf] = 0x20646e75;
 }
 
-void readKeyBlock64(word key[keySize * T][], word block[blockSize][]) {
+void readKeyBlock64(word key[keySize * T][2], word block[blockSize][2]) {
   
-  key[1] = 0x0f0e0d0c0b0a0908;
-  key[0] = 0x0706050403020100;
+  key[1][firstHalf] = 0x0f0e0d0c0b0a0908;
+  key[0][firstHalf] = 0x0706050403020100;
   
-  block[0] = 0x6c61766975716520;
-  block[1] = 0x7469206564616d20;
+  block[0][firstHalf] = 0x6c61766975716520;
+  block[1][firstHalf] = 0x7469206564616d20;
 }
 
-void printBlockHex(word block[blockSize][], char* status) {
+void printBlockHex(word block[blockSize][2], char* status) {
   printf("%s: ", status);
   for(int i = 0; i < blockSize; ++i) {
     printf("%llx ", block[i][firstHalf]);
@@ -119,17 +120,19 @@ void printBlockHex(word block[blockSize][], char* status) {
 }
 
 void printWordBits(word w, int isspace) {
-  for(int i = sizeof(blockSize) * BYTESIZE - 1; i >= 0; --i) {
+  word one = 1; // again very important for casting
+  for(int i = 0; i < sizeof(word) * BYTESIZE; ++i) {
+    int bit = !!(w & (one << i));
     if(isspace) {
-      printf("%d ", block[j][fistHalf] & (1 << i));
+      printf("%d ", bit);
     }
     else {
-      printf("%d", block[j][fistHalf] & (1 << i));
+      printf("%d", bit);
     }
   }
 }
 
-void printBlockInitialBits(word block[blockSize][], char* status) {
+void printBlockInitialBits(word block[blockSize][2], char* status) {
   for(int j = 0; j < blockSize; ++j) {
     printf("block[%d]:",j);
     printWordBits(block[j][firstHalf], TRUE);
@@ -137,10 +140,11 @@ void printBlockInitialBits(word block[blockSize][], char* status) {
   }
 }
 
-void printBlockDoubleBits(word block[blockSize][], char* status) {
+void printBlockDoubleBits(word block[blockSize][2], char* status) {
   for(int j = 0; j < blockSize; ++j) {
     printf("block[%d]:",j);
     printWordBits(block[j][firstHalf], FALSE);
+    printf(" ");
     printWordBits(block[j][secondHalf], FALSE);
     printf("\n");
   }
@@ -151,26 +155,38 @@ void printBlockDoubleBits(word block[blockSize][], char* status) {
 // 1 -> 10
 // 0 -> 01
 word expandEncoding(word w) {
-  word newWord = 0;
-  for(int i = 0; i < HALFOWRD; ++i) {
-    newWord <<= 2;
-    newWord |= ((w & 1) == 1)
-      ? ONE_ZERO
-      : ZERO_ONE;
+  word newWord = 0; 
+  word one = 1; // very important for auto casting
+  word two = 2;
+  for(int i = 0; i < HALFWORD; ++i) {
+    //    printf("i: %d     bit: %d -> ", i, !!(w & (one << i)));
+    if(!!(w & (one << i))) {
+      word append = (ONE_ZERO << (two*i)); 
+      //      printWordBits(append, FALSE);
+      newWord |= append;
+    }
+    else{
+      word append = (ZERO_ONE << (two*i));
+      //      printWordBits(append, FALSE);
+      newWord |= append;
+    }
+    //    printf("\n");
   }
   return newWord;
 }
 
-// asumes regular input and creates 
-void transformKeyBlock(word key[keySize * T][], word block[blockSize][]) {
+// asumes regular input and creates balanced encoding
+void transformKeyBlock(word key[keySize * T][2], word block[blockSize][2]) {
   // first transform key
   for(int i = 0; i < keySize; ++i) {
-    key[i][firstHalf]  = getDoubleEncoding(key[i]);
-    key[i][secondHalf] = getDoubleEncoding(key[i] >> HALFWORD);
+    word auxKey = key[i][firstHalf];
+    key[i][firstHalf]  = expandEncoding(auxKey);
+    key[i][secondHalf] = expandEncoding(auxKey >> HALFWORD);
   }
   // now transform block
   for(int i = 0; i < blockSize; ++i) {
-    block[i][firstHalf]  = getDoubleEncoding(block[i]);
-    block[i][secondHalf] = getDoubleEncoding(block[i] >> HALFWORD);
+    word auxBlock = block[i][firstHalf];
+    block[i][firstHalf]  = expandEncoding(auxBlock);
+    block[i][secondHalf] = expandEncoding(auxBlock >> HALFWORD);
   }
 }

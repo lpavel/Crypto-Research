@@ -14,19 +14,21 @@ typedef uint32_t word;
 typedef uint64_t word;
 #endif
 
-void readKeyBlock32(word key[], word block[]);
-void readKeyBlock64(word key[], word block[]);
+void readKeyBlock32(word key[][2], word block[][2]);
+void readKeyBlock64(word key[][2], word block[][2]);
 
-void keyExpansion(word key[]);
+void keyExpansion(word key[][2]);
 word S(word w, int pos);
 
-void printBlockHex(word block[], char* status);
-void printWordBits(word w, int isspac);
-void printBlockInitialBits(word block[], char* status);
-void printBlockDoubleBits (word block[], char* status);
+void transformKeyBlock(word key[][2], word block[][2]);
 
-void encrypt(word *xp, word *yp, word key[]);
-void decrypt(word *xp, word *yp, word key[]);
+void printBlockHex(word block[][2], char* status);
+void printWordBits(word w, int isspac);
+void printBlockInitialBits(word block[][2], char* status);
+void printBlockDoubleBits (word block[][2], char* status);
+
+void encrypt(word *xp, word *yp, word key[][2]);
+void decrypt(word *xp, word *yp, word key[][2]);
 
 word expandEncoding(word w);
 #endif

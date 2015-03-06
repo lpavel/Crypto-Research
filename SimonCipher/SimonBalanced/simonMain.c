@@ -18,9 +18,9 @@ int main() {
   readKeyBlock64(key, block);
 #endif
 
-  printBlockInitial(block, "initial");
-  transformKeyBlock(key,Block);
-  printBlockDouble(block, "initial Transformed");
+  printBlockInitialBits(block, "initial");
+  transformKeyBlock(key, block);
+  printBlockDoubleBits(block, "initial Transformed");
   /*
   
   keyExpansion(key);
