@@ -32,7 +32,7 @@ void and(word x[2], word y[2], word dest[2]);
 void xor(word x[2], word y[2], word dest[2]);
 void not(word w[2], word dest[2]);
 word andWord(word x, word y);
-word xorWord(word x[2], word y[2]);
+word xorWord(word x, word y);
 word notWord(word w);
 
 

@@ -12,6 +12,8 @@ int main() {
   word key[keySize * T][2];
   word block[blockSize][2];
 
+  createZ();
+  
 #if (WORDSIZE == 32)
   readKeyBlock32(key, block);
 #elif (WORDSIZE == 64)

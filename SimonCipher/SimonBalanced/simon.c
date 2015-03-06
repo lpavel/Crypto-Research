@@ -11,6 +11,8 @@ const int firstHalf = 0;
 const int secondHalf = 1;
 const word ONE_ZERO = 2;
 const word ZERO_ONE = 1;
+const word ONE = 1;
+const word ZERO = 0;
 
 #define TRUE  1
 #define FALSE 0
@@ -28,7 +30,6 @@ const int m = 2;
 const int j = 2; // in this particular setup
 #endif
 
-
 const uint32_t z[5][62] = {
   {1,1,1,1,1,0,1,0,0,0,1,0,0,1,0,1,0,1,1,0,0,0,0,1,1,1,0,0,1,1,0,
    1,1,1,1,1,0,1,0,0,0,1,0,0,1,0,1,0,1,1,0,0,0,0,1,1,1,0,0,1,1,0},
@@ -41,6 +42,17 @@ const uint32_t z[5][62] = {
   {1,1,0,1,0,0,0,1,1,1,1,0,0,1,1,0,1,0,1,1,0,1,1,0,0,0,1,0,0,0,0,
    0,0,1,0,1,1,1,0,0,0,0,1,1,0,0,1,0,1,0,0,1,0,0,1,1,1,0,1,1,1,1}
 };
+
+word balancedZ[5][62][2];
+
+void createZ() {
+  for(int i = 0; i < 5; ++i) {
+    for(int j = 0; j < 62; ++j) {
+      balancedZ[i][j][firstHalf]  = expandEncoding(0);
+      balancedZ[i][i][secondHalf] = expandEncoding(1);
+    }
+  }
+}
 
 void S(word w[2], word dest[2], int pos) {
   word numbits = sizeof(word) * BYTESIZE;
@@ -60,19 +72,21 @@ void S(word w[2], word dest[2], int pos) {
 
 // TODO: needs to be updated
 void keyExpansion(word key[keySize * T][2]) {
+  word three[2];
+  three[firstHalf] = expandEncoding(3);
+  three[secondHalf] = expandEncoding(0);
   for(int i = m; i < T; ++i) {
     word tmp[2];
     S(key[i-1], tmp,-3);
     if(m==4) {
       xor(tmp, key[i-3], tmp);
     }
-    word retS[2]; S(tmp, retS, -1);
+    word retS[2],var1[2], var2[2], notKey[2];
+    S(tmp, retS, -1);
     xor(tmp, retS , tmp);
-    word var1[2], var2[2], notKey[2];
-    not(key[i-m], notKey);
-    
+    not(key[i-m], notKey);    
     xor(notKey, tmp, var1);
-    xor(z[j][(i-m) % 62], 3, var2); // still need to do this modulo shit
+    xor(balancedZ[j][(i-m) % 62], three, var2); // still need to do this modulo shit
     xor(var1, var2, key[i]);
   }
   /*  for(int i = 0; i < T; ++i) {
@@ -134,9 +148,8 @@ void printBlockHex(word block[blockSize][2], char* status) {
 }
 
 void printWordBits(word w, int isspace) {
-  word one = 1; // again very important for casting
   for(int i = 0; i < sizeof(word) * BYTESIZE; ++i) {
-    int bit = !!(w & (one << i));
+    int bit = !!(w & (ONE << i));
     if(isspace) {
       printf("%d ", bit);
     }
@@ -170,11 +183,10 @@ void printBlockDoubleBits(word block[blockSize][2], char* status) {
 // 0 -> 01
 word expandEncoding(word w) {
   word newWord = 0; 
-  word one = 1; // very important for auto casting
   word two = 2;
   for(int i = 0; i < HALFWORD; ++i) {
     //    printf("i: %d     bit: %d -> ", i, !!(w & (one << i)));
-    if(!!(w & (one << i))) {
+    if(!!(w & (ONE << i))) {
       word append = (ONE_ZERO << (two*i)); 
       //      printWordBits(append, FALSE);
       newWord |= append;
@@ -205,12 +217,16 @@ void transformKeyBlock(word key[keySize * T][2], word block[blockSize][2]) {
   }
 }
 
+word getBitAt(word x, word i) {
+  return x & (ONE << i);
+}
+
 word andWord(word x, word y) {
   word newWord = 0;
   word two = 2;
   for(int i = 0; i < HALFWORD; ++i) {
-    word mid = x & y;
-    if(mid & 1) {
+    word mid = getBitAt(x, 2*i) & getBitAt(y, 2*i);
+    if(mid != 0) {
       word append = (ONE_ZERO << (two*i)); 
       newWord |= append;
     }
@@ -218,17 +234,15 @@ word andWord(word x, word y) {
       word append = (ZERO_ONE << (two*i));
       newWord |= append;
     }
-    x >>= 2;
-    y >>= 2;
   }
   return newWord;
 }
 
-word xorWord(word x[2], word y[2]) {
+word xorWord(word x, word y) {
   word newWord = 0;
   word two = 2;
   for(int i = 0; i < HALFWORD; ++i) {
-    word mid = x ^ y;
+    word mid = getBitAt(x,2*i) ^ getBitAt(y, 2*i);
     if(mid & 1) {
       word append = (ONE_ZERO << (two*i)); 
       newWord |= append;
@@ -237,8 +251,6 @@ word xorWord(word x[2], word y[2]) {
       word append = (ZERO_ONE << (two*i));
       newWord |= append;
     }
-    x >>= 2;
-    y >>= 2;
   }
   return newWord;  
 }
@@ -263,4 +275,3 @@ void xor(word x[2], word y[2], word dest[2]) {
   dest[firstHalf]  = xorWord(x[firstHalf], y[firstHalf]);
   dest[secondHalf] = xorWord(x[secondHalf], y[secondHalf]);
 }
-
