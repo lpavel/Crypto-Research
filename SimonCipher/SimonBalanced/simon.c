@@ -94,31 +94,46 @@ void keyExpansion(word key[keySize * T][2]) {
     }*/
 }
 
-/*
-// TODO: needs to be updated
-void encrypt(word *xp[], word *yp[], word key[]) {
-  word x[] = *xp, y[] = *yp;
+
+void encrypt(word x[2], word y[2], word key[keySize * T][2]) {
   for(int i = 0; i < T; ++i) {
-    word tmp = x;
-    x = y ^ (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i];
-    y = tmp;
+    word tmp[2] = {x[firstHalf], x[secondHalf]};
+    word oneS[2]; S(x,oneS,1);
+    word twoS[2]; S(x,twoS,2);
+    word eightS[2]; S(x, eightS, 8);
+    
+    word term2[2];
+    word term3[2];
+    xor(twoS, key[i], term3); // term3 = S(x,2) ^ key[i]
+    and(oneS, eightS, term2); // term2 = S(x,1) & S(x,8)
+    xor(term2, term3, term2); // term2 = (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
+    xor(y, term2, x);         // x = y ^ (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
+    y[firstHalf] = tmp[firstHalf];
+    y[secondHalf] = tmp[secondHalf];
   }
-  *xp = x; *yp = y;
 }
-*/
-/*
-// TODO: needs to be updated
-void decrypt(word *xp, word *yp, word key[]){
-  word x = *xp, y = *yp;
+
+
+void decrypt(word x[2], word y[2], word key[keySize * T][2]){
   for(int i = T - 1; i >= 0 ; --i) {
-    word tmp = x;
-    x = y;
-    y = tmp ^ key[i] ^ S(y,2) ^ (S(y,1) & S(y,8));
+    word tmp[2] = {x[firstHalf], x[secondHalf]};
+    word oneS[2]; S(y,oneS,1);
+    word twoS[2]; S(y,twoS,2);
+    word eightS[2]; S(y, eightS, 8);
+
+    word term2[2];
+    word term3[2];
+    
+    x[firstHalf]  = y[firstHalf];
+    x[secondHalf] = y[secondHalf];
+    xor(tmp, key[i], term2);  // term2 = tmp ^ key[i]
+    xor(term2, twoS, term2);  // temp2 = tmp ^ key[i] ^ S(y,2)
+    and(oneS, eightS, term3); // temp3 = S(y,1) & S(y,8)
+    xor(term2, term3, y);     // y = tmp ^ key[i] ^ S(y,2) ^ (S(y,1) & S(y,8))
   }
-  *xp = x;
-  *yp = y;
 }
-*/
+
+
 void readKeyBlock32(word key[][2], word block[][2]) {
 
   key[3][firstHalf] = 0x1b1a1918;
@@ -160,6 +175,7 @@ void printWordBits(word w, int isspace) {
 }
 
 void printBlockInitialBits(word block[blockSize][2], char* status) {
+  printf("%s\n", status);
   for(int j = 0; j < blockSize; ++j) {
     printf("block[%d]:",j);
     printWordBits(block[j][firstHalf], TRUE);
@@ -168,6 +184,7 @@ void printBlockInitialBits(word block[blockSize][2], char* status) {
 }
 
 void printBlockDoubleBits(word block[blockSize][2], char* status) {
+  printf("%s\n", status);
   for(int j = 0; j < blockSize; ++j) {
     printf("block[%d]:",j);
     printWordBits(block[j][firstHalf], FALSE);
@@ -218,7 +235,7 @@ void transformKeyBlock(word key[keySize * T][2], word block[blockSize][2]) {
 }
 
 word getBitAt(word x, word i) {
-  return x & (ONE << i);
+  return !!(x & (ONE << i));
 }
 
 word andWord(word x, word y) {

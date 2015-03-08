@@ -14,6 +14,7 @@ typedef uint32_t word;
 typedef uint64_t word;
 #endif
 
+void createZ();
 void readKeyBlock32(word key[][2], word block[][2]);
 void readKeyBlock64(word key[][2], word block[][2]);
 
@@ -27,7 +28,7 @@ void printWordBits(word w, int isspac);
 void printBlockInitialBits(word block[][2], char* status);
 void printBlockDoubleBits (word block[][2], char* status);
 
-
+word getBitAt(word x, word i);
 void and(word x[2], word y[2], word dest[2]);
 void xor(word x[2], word y[2], word dest[2]);
 void not(word w[2], word dest[2]);
@@ -35,9 +36,8 @@ word andWord(word x, word y);
 word xorWord(word x, word y);
 word notWord(word w);
 
-
-void encrypt(word *xp, word *yp, word key[][2]);
-void decrypt(word *xp, word *yp, word key[][2]);
+void encrypt(word x[2], word y[2], word key[][2]);
+void decrypt(word x[2], word y[2], word key[][2]);
 
 word expandEncoding(word w);
 #endif
