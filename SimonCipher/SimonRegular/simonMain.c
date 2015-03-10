@@ -1,4 +1,4 @@
-#include"Simon.h"
+#include"simon.h"
 #include<stdio.h>
 extern int BYTESIZE;
 
