@@ -2,7 +2,7 @@
 #include<string.h>
 #include<stdlib.h>
 #include<inttypes.h>
-#include"Simon.h"
+#include"simon.h"
 
 const int BYTESIZE = 8;
 const int blockSize = 2;
