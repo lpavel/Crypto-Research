@@ -6,7 +6,7 @@
 // have only 2 variatns 32 and 64
 // 32 => blocksize 64, keysize 128
 // 64 => blocksize 128, keysize 128
-#define WORDSIZE 64
+#define WORDSIZE 32
 
 #if (WORDSIZE == 32)
 typedef uint32_t word;

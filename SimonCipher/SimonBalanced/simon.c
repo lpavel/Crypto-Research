@@ -47,9 +47,15 @@ word balancedZ[5][62][2];
 
 void createZ() {
   for(int i = 0; i < 5; ++i) {
-    for(int j = 0; j < 62; ++j) {
-      balancedZ[i][j][firstHalf]  = expandEncoding(0);
-      balancedZ[i][i][secondHalf] = expandEncoding(1);
+    for(int k = 0; k < 62; ++k) {
+      if(z[i][k] == 0) {
+	balancedZ[i][k][firstHalf]  = expandEncoding(0);
+	balancedZ[i][k][secondHalf] = expandEncoding(1);
+      }
+      else {
+	balancedZ[i][k][firstHalf]  = expandEncoding(1);
+	balancedZ[i][k][secondHalf] = expandEncoding(0);
+      }
     }
   }
 }
@@ -157,7 +163,11 @@ void readKeyBlock64(word key[keySize * T][2], word block[blockSize][2]) {
 void printBlockHex(word block[blockSize][2], char* status) {
   printf("%s: ", status);
   for(int i = 0; i < blockSize; ++i) {
+#if (WORDSIZE == 32)
+    printf("%x ", block[i][firstHalf]);
+#elif (WORDSIZE == 64)
     printf("%llx ", block[i][firstHalf]);
+#endif
   }
   printf("\n");
 }
