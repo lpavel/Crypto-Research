@@ -79,6 +79,15 @@ In this paper we investigate whether constant leakage implementation on lightwei
 
 \section{Work Description}
 
+In 2011, Hoogvorst et al.  ~\cite{Hoogvorst} proposed in 2011 a Software Countermeasure to protect against Side Channel Attacks. The main idea is to map every bit such that it will always be represented by a 1 and a 0. For example 1 $\rightarrow$ 10 and 0 $\rightarrow$ 01. This representation assures constant Hamming Weight since all numbers will contain the same number of 0s and 1s. Moreover, another advantage of this representation is that it can easily detect faults since it is obvious that no number should be represented as 2 0s or 2 1s. The encoding presented above has been used in this project.
+
+It is important to be mentioned that this encoding does not offer constant Hamming Distance between terms and results. In ~\cite{BEPrince} , the authors managed to write the operations of the Prince Cipher such that they offer a constant Hamming Distance. In our case, in order to receive a constant Hamming Distance, the registers could be zeroed before operations are done to them.
+
+
+Simon Cipher ~\cite{Beaulieu_Simon} is a Feistel cipher consisting in the following operations: bitwise XOR, $\oplus$ ; bitwise AND, $\And$ ; left circular shift S by j bits, $S^j$ . Because Simon has been designed to be a good candidate for different platforms that may have more or less resources and may need to be very secure or not that secure, multiple versions that operate on different block sizes and key sizes of the cipher have been introduced. The first implementation used in this study is Simon64/128. It consists in a block size of 64 bits, a word size of 32 bits, and a key size of 128 bits. In this implementation, the Feistel operations are being performed in 44 rounds .
+
+
+
 - introduce Hoogvorst and balanced encoding
 - wrote C code that does the regular Simon 64/128 and 128/128
 - wrote balanced encoding in C for same 2 ciphers.
