@@ -205,7 +205,7 @@ int keyExpansion(word key[keySize * T][2]) {
 
 int verifyFault(word x[]) {
     int count1 = 0;
-    for(int p = 0; p < 64; ++p) {
+    for(int p = 0; p < WORDSIZE; ++p) {
       if(getBitAt(x[firstHalf],p)) {
 	++count1;
       }
@@ -213,7 +213,7 @@ int verifyFault(word x[]) {
 	count1++;
       }
     }
-    if(count1 != 64) {
+    if(count1 != WORDSIZE) {
       return FALSE;
     }
     return TRUE;
@@ -221,14 +221,14 @@ int verifyFault(word x[]) {
 
 
 int encrypt(word x[2], word y[2], word key[keySize * T][2]) {
-  //  word faulty = 0x00001000;
+  //word faulty = 0x00001000;
   int truthVal = TRUE;
   for(int i = 0; i < T; ++i) {
-    /* Uncomment this for fault detection
+     /* Uncomment this for fault detection
     if(i == 30) {
       y[firstHalf] ^= faulty; 
     }
-    */
+     */
     word tmp[2] = {x[firstHalf], x[secondHalf]};
     word oneS[2]; truthVal &= S(x,oneS,1);
     word twoS[2]; truthVal &= S(x,twoS,2);
