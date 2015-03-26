@@ -45,27 +45,112 @@ const uint32_t z[5][62] = {
 
 word balancedZ[5][62][2];
 
+//stick to the definition:
+// 1 -> 01
+// 0 -> 10
+word expandEncoding(word w) {
+  int i;
+  word newWord = 0;
+  word two = 2;
+  for(i = 0; i < HALFWORD; ++i) {
+    if(!!(w & (ONE << i))) {
+      word append = (ONE_ZERO << (two*i));
+      newWord |= append;
+    }
+    else{
+      word append = (ZERO_ONE << (two*i));
+      newWord |= append;
+    }
+  }
+  return newWord;
+}
+
+
 void createZ() {
-  for(int i = 0; i < 5; ++i) {
-    for(int k = 0; k < 62; ++k) {
+  word i,k;
+  for(i = 0; i < 5; ++i) {
+    for(k = 0; k < 62; ++k) {
       if(z[i][k] == 0) {
-	balancedZ[i][k][firstHalf]  = expandEncoding(0);
-	balancedZ[i][k][secondHalf] = expandEncoding(1);
+	balancedZ[i][k][firstHalf] = expandEncoding(0);
+	balancedZ[i][k][secondHalf] = expandEncoding(0);
       }
       else {
-	balancedZ[i][k][firstHalf]  = expandEncoding(1);
+	balancedZ[i][k][firstHalf] = expandEncoding(1);
 	balancedZ[i][k][secondHalf] = expandEncoding(0);
       }
     }
   }
 }
 
+word getBitAt(word x, word i) {
+  return !!(x & (ONE << i));
+}
+
+
+word andWord(word x, word y) {
+  int i;
+  word newWord = 0;
+  word two = 2;
+  for(i = 0; i < HALFWORD; ++i) {
+    word mid = getBitAt(x, 2*i) & getBitAt(y, 2*i);
+    if(mid != 0) {
+      word append = (ONE_ZERO << (two*i));
+      newWord |= append;
+    }
+    else{
+      word append = (ZERO_ONE << (two*i));
+      newWord |= append;
+    }
+  }
+  return newWord;
+}
+
+word xorWord(word x, word y) {
+  int i;
+  word newWord = 0;
+  word two = 2;
+  for(i = 0; i < HALFWORD; ++i) {
+    word mid = getBitAt(x,2*i) ^ getBitAt(y, 2*i);
+    if(mid & 1) {
+      word append = (ONE_ZERO << (two*i));
+      newWord |= append;
+    }
+    else{
+      word append = (ZERO_ONE << (two*i));
+      newWord |= append;
+    }
+  }
+  return newWord;
+}
+
+word notWord(word w) {
+  uint64_t maxUInt = 0xffffffffffffffff;
+  word maxWord = (word) maxUInt;
+  return w ^ maxWord;
+}
+
+void not(word w[2], word dest[2]) {
+  dest[firstHalf] = notWord(w[firstHalf]);
+  dest[secondHalf] = notWord(w[secondHalf]);
+}
+
+void and(word x[2], word y[2], word dest[2]) {
+  dest[firstHalf] = andWord(x[firstHalf], y[firstHalf]);
+  dest[secondHalf] = andWord(x[secondHalf], y[secondHalf]);
+}
+
+void xor(word x[2], word y[2], word dest[2]) {
+  dest[firstHalf] = xorWord(x[firstHalf], y[firstHalf]);
+  dest[secondHalf] = xorWord(x[secondHalf], y[secondHalf]);
+}
+
 void S(word w[2], word dest[2], int pos) {
   word numbits = sizeof(word) * BYTESIZE;
+  pos *= 2;
   if(pos >= 0) {
-    word carry1 = w[firstHalf]  >> (numbits - pos);
+    word carry1 = w[firstHalf] >> (numbits - pos);
     word carry2 = w[secondHalf] >> (numbits - pos);
-    dest[firstHalf]  = (w[firstHalf] << pos) | carry2; 
+    dest[firstHalf] = (w[firstHalf] << pos) | carry2;
     dest[secondHalf] = (w[secondHalf] << pos) | carry1;
   }
   else {
@@ -76,30 +161,35 @@ void S(word w[2], word dest[2], int pos) {
   }
 }
 
-// TODO: needs to be updated
 void keyExpansion(word key[keySize * T][2]) {
+  int i, p;
   word three[2];
   three[firstHalf] = expandEncoding(3);
   three[secondHalf] = expandEncoding(0);
-  for(int i = m; i < T; ++i) {
+  for(i = m; i < T; ++i) {
     word tmp[2];
-    S(key[i-1], tmp,-3);
+    S(key[i-1], tmp,-3); // tmp = S(key[i], -3)
     if(m==4) {
-      xor(tmp, key[i-3], tmp);
+      xor(tmp, key[i-3], tmp); // tmp ^= key[i-3]
     }
     word retS[2],var1[2], var2[2], notKey[2];
-    S(tmp, retS, -1);
-    xor(tmp, retS , tmp);
-    not(key[i-m], notKey);    
-    xor(notKey, tmp, var1);
-    xor(balancedZ[j][(i-m) % 62], three, var2); // still need to do this modulo shit
-    xor(var1, var2, key[i]);
+    S(tmp, retS, -1);        // retS = S(tmp, -1)
+    xor(tmp, retS , tmp);    // tmp = tmp ^ S(tmp, -1)
+    not(key[i-m], notKey);   // notKey = ~key[i-m]
+    xor(notKey, tmp, var1);  // var1 = tmp ^ ~key[i-m]
+    xor(balancedZ[j][(i-m) % 62], three, var2); // var2 = z[j][(i-m)%62] ^ 3
+    xor(var1, var2, key[i]); // key[i] = ~key[i-m] ^ tmp ^ z[j][(i-m)%62] ^ 3
+    
+    int count1 = 0;
+    for(p = 0; p < 64; ++p) {
+      if(getBitAt(key[i][firstHalf],p)) count1++;
+      if(getBitAt(key[i][secondHalf],p)) count1++;
+    }
+    if(count1 != 64) {
+      count1 = -5;
+    }   
   }
-  /*  for(int i = 0; i < T; ++i) {
-    printf("%x \n", key[i]);
-    }*/
 }
-
 
 void encrypt(word x[2], word y[2], word key[keySize * T][2]) {
   for(int i = 0; i < T; ++i) {
@@ -152,12 +242,10 @@ void readKeyBlock32(word key[][2], word block[][2]) {
 }
 
 void readKeyBlock64(word key[keySize * T][2], word block[blockSize][2]) {
-  
-  key[1][firstHalf] = 0x0f0e0d0c0b0a0908;
-  key[0][firstHalf] = 0x0706050403020100;
-  
-  block[0][firstHalf] = 0x6c61766975716520;
-  block[1][firstHalf] = 0x7469206564616d20;
+	key[1][firstHalf] = 0x0f0e0d0c0b0a0908;
+	key[0][firstHalf] = 0x0706050403020100;
+	block[0][firstHalf] = 0x6373656420737265;
+	block[1][firstHalf] = 0x6c6c657661727420;
 }
 
 void printBlockHex(word block[blockSize][2], char* status) {
@@ -204,30 +292,6 @@ void printBlockDoubleBits(word block[blockSize][2], char* status) {
   }
 }
 
-
-//stick to the definition:
-// 1 -> 10
-// 0 -> 01
-word expandEncoding(word w) {
-  word newWord = 0; 
-  word two = 2;
-  for(int i = 0; i < HALFWORD; ++i) {
-    //    printf("i: %d     bit: %d -> ", i, !!(w & (one << i)));
-    if(!!(w & (ONE << i))) {
-      word append = (ONE_ZERO << (two*i)); 
-      //      printWordBits(append, FALSE);
-      newWord |= append;
-    }
-    else{
-      word append = (ZERO_ONE << (two*i));
-      //      printWordBits(append, FALSE);
-      newWord |= append;
-    }
-    //    printf("\n");
-  }
-  return newWord;
-}
-
 // asumes regular input and creates balanced encoding
 void transformKeyBlock(word key[keySize * T][2], word block[blockSize][2]) {
   // first transform key
@@ -242,63 +306,4 @@ void transformKeyBlock(word key[keySize * T][2], word block[blockSize][2]) {
     block[i][firstHalf]  = expandEncoding(auxBlock);
     block[i][secondHalf] = expandEncoding(auxBlock >> HALFWORD);
   }
-}
-
-word getBitAt(word x, word i) {
-  return !!(x & (ONE << i));
-}
-
-word andWord(word x, word y) {
-  word newWord = 0;
-  word two = 2;
-  for(int i = 0; i < HALFWORD; ++i) {
-    word mid = getBitAt(x, 2*i) & getBitAt(y, 2*i);
-    if(mid != 0) {
-      word append = (ONE_ZERO << (two*i)); 
-      newWord |= append;
-    }
-    else{
-      word append = (ZERO_ONE << (two*i));
-      newWord |= append;
-    }
-  }
-  return newWord;
-}
-
-word xorWord(word x, word y) {
-  word newWord = 0;
-  word two = 2;
-  for(int i = 0; i < HALFWORD; ++i) {
-    word mid = getBitAt(x,2*i) ^ getBitAt(y, 2*i);
-    if(mid & 1) {
-      word append = (ONE_ZERO << (two*i)); 
-      newWord |= append;
-    }
-    else{
-      word append = (ZERO_ONE << (two*i));
-      newWord |= append;
-    }
-  }
-  return newWord;  
-}
-
-word notWord(word w) {
-  uint64_t maxUInt = 0xffffffffffffffff;
-  word maxWord = (word) maxUInt;
-  return w ^ maxWord;
-}
-
-void not(word w[2], word dest[2]) {
-  dest[firstHalf] = notWord(w[firstHalf]);
-  dest[secondHalf] = notWord(w[secondHalf]);
-}
-
-void and(word x[2], word y[2], word dest[2]) {
-  dest[firstHalf]  = andWord(x[firstHalf], y[firstHalf]);
-  dest[secondHalf] = andWord(x[secondHalf], y[secondHalf]);
-}
-
-void xor(word x[2], word y[2], word dest[2]) {
-  dest[firstHalf]  = xorWord(x[firstHalf], y[firstHalf]);
-  dest[secondHalf] = xorWord(x[secondHalf], y[secondHalf]);
 }
