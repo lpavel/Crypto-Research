@@ -43,6 +43,7 @@ word S(word w, int pos) {
   }
 }
 
+
 void keyExpansion(word key[]) {
   for(int i = m; i < T; ++i) {
     word tmp = S(key[i-1],-3);
@@ -52,9 +53,6 @@ void keyExpansion(word key[]) {
     tmp ^= S(tmp, -1);
     key[i] = ~key[i-m] ^ tmp ^ z[j][(i-m) % 62] ^ 3;
   }
-  /*  for(int i = 0; i < T; ++i) {
-    printf("%x \n", key[i]);
-    }*/
 }
 
 void encrypt(word *xp, word *yp, word key[]) {
@@ -69,7 +67,7 @@ void encrypt(word *xp, word *yp, word key[]) {
 
 void decrypt(word *xp, word *yp, word key[]){
   word x = *xp, y = *yp;
-  for(int i = T - 1; i >= 0 ; --i) {
+x  for(int i = T - 1; i >= 0 ; --i) {
     word tmp = x;
     x = y;
     y = tmp ^ key[i] ^ S(y,2) ^ (S(y,1) & S(y,8));
@@ -90,12 +88,10 @@ void readKeyBlock32(word key[], word block[]) {
 }
 
 void readKeyBlock64(word key[], word block[]) {
-  
-  key[1] = 0x0f0e0d0c0b0a0908;
-  key[0] = 0x0706050403020100;
-  
-  block[0] = 0x6c61766975716520;
-  block[1] = 0x7469206564616d20;
+	key[1] = 0x0f0e0d0c0b0a0908;
+	key[0] = 0x0706050403020100;
+	block[0] = 0x6373656420737265;
+	block[1] = 0x6c6c657661727420;
 }
 
 void printBlock(word block[], char* status) {
