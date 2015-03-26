@@ -8,6 +8,9 @@ extern int T;
 extern int m;
 extern int j; // in this particular setup
 
+#define TRUE  1
+#define FALSE 0
+
 int main() {
   word key[keySize * T][2];
   word block[blockSize][2];
@@ -26,12 +29,21 @@ int main() {
   printBlockDoubleBits(block, "initial Transformed block");
   printBlockDoubleBits(key, "initial Transformed key");
   
-  keyExpansion(key);
+  if(keyExpansion(key) == FALSE) {
+    printf("Fault Detected\n");
+    return -1; // detect a fault and abandon everything
+  }
   
-  encrypt(block[0], block[1], key);
+  if(encrypt(block[0], block[1], key) == FALSE) {
+    printf("Fault Detected\n");
+    return -1; // detect a fault and abandon everything
+  }
   printBlockDoubleBits(block, "encrypted");
 
-  decrypt(block[0], block[1], key);
+  if(decrypt(block[0], block[1], key) == FALSE) {
+    printf("Fault Detected\n");
+    return -1; // detect a fault and abandon everything    
+  }
   printBlockDoubleBits(block, "decrypted");
   
   return 0;

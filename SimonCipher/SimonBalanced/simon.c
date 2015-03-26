@@ -129,22 +129,37 @@ word notWord(word w) {
   return w ^ maxWord;
 }
 
-void not(word w[2], word dest[2]) {
+int not(word w[2], word dest[2]) {
+  if(verifyFault(w) == FALSE) {
+    return FALSE;
+  }
   dest[firstHalf] = notWord(w[firstHalf]);
   dest[secondHalf] = notWord(w[secondHalf]);
+  return TRUE;
 }
 
-void and(word x[2], word y[2], word dest[2]) {
+int and(word x[2], word y[2], word dest[2]) {
+  if((verifyFault(x) == FALSE) || (verifyFault(y) == FALSE)) {
+    return FALSE;
+  }
   dest[firstHalf] = andWord(x[firstHalf], y[firstHalf]);
   dest[secondHalf] = andWord(x[secondHalf], y[secondHalf]);
+  return TRUE;
 }
 
-void xor(word x[2], word y[2], word dest[2]) {
+int xor(word x[2], word y[2], word dest[2]) {
+  if((verifyFault(x) == FALSE) || (verifyFault(y) == FALSE)) {
+    return FALSE;
+  }
   dest[firstHalf] = xorWord(x[firstHalf], y[firstHalf]);
   dest[secondHalf] = xorWord(x[secondHalf], y[secondHalf]);
+  return TRUE;
 }
 
-void S(word w[2], word dest[2], int pos) {
+int S(word w[2], word dest[2], int pos) {
+  if(verifyFault(w) == FALSE) {
+    return FALSE;
+  }
   word numbits = sizeof(word) * BYTESIZE;
   pos *= 2;
   if(pos >= 0) {
@@ -159,74 +174,105 @@ void S(word w[2], word dest[2], int pos) {
     dest[firstHalf] = (w[firstHalf] >> (-pos)) | carry2;
     dest[secondHalf] = (w[secondHalf] >> (-pos)) | carry1;
   }
+  return TRUE;
 }
 
-void keyExpansion(word key[keySize * T][2]) {
-  int i, p;
+int keyExpansion(word key[keySize * T][2]) {
+  int i;
+  int truthVal = TRUE;
   word three[2];
   three[firstHalf] = expandEncoding(3);
   three[secondHalf] = expandEncoding(0);
   for(i = m; i < T; ++i) {
     word tmp[2];
-    S(key[i-1], tmp,-3); // tmp = S(key[i], -3)
+    truthVal &= S(key[i-1], tmp,-3); // tmp = S(key[i], -3)
     if(m==4) {
-      xor(tmp, key[i-3], tmp); // tmp ^= key[i-3]
+      truthVal &= xor(tmp, key[i-3], tmp); // tmp ^= key[i-3]
     }
     word retS[2],var1[2], var2[2], notKey[2];
-    S(tmp, retS, -1);        // retS = S(tmp, -1)
-    xor(tmp, retS , tmp);    // tmp = tmp ^ S(tmp, -1)
-    not(key[i-m], notKey);   // notKey = ~key[i-m]
-    xor(notKey, tmp, var1);  // var1 = tmp ^ ~key[i-m]
-    xor(balancedZ[j][(i-m) % 62], three, var2); // var2 = z[j][(i-m)%62] ^ 3
-    xor(var1, var2, key[i]); // key[i] = ~key[i-m] ^ tmp ^ z[j][(i-m)%62] ^ 3
-    
+    truthVal &= S(tmp, retS, -1);        // retS = S(tmp, -1)
+    truthVal &= xor(tmp, retS , tmp);    // tmp = tmp ^ S(tmp, -1)
+    truthVal &= not(key[i-m], notKey);   // notKey = ~key[i-m]
+    truthVal &= xor(notKey, tmp, var1);  // var1 = tmp ^ ~key[i-m]
+    truthVal &= xor(balancedZ[j][(i-m) % 62], three, var2); // var2 = z[j][(i-m)%62] ^ 3
+    truthVal &= xor(var1, var2, key[i]);// key[i] = ~key[i-m] ^ tmp ^ z[j][(i-m)%62] ^ 3
+    if(!truthVal) {
+      return FALSE;
+    }
+  }
+  return TRUE;
+}
+
+int verifyFault(word x[]) {
     int count1 = 0;
-    for(p = 0; p < 64; ++p) {
-      if(getBitAt(key[i][firstHalf],p)) count1++;
-      if(getBitAt(key[i][secondHalf],p)) count1++;
+    for(int p = 0; p < 64; ++p) {
+      if(getBitAt(x[firstHalf],p)) {
+	++count1;
+      }
+      if(getBitAt(x[secondHalf],p)) {
+	count1++;
+      }
     }
     if(count1 != 64) {
-      count1 = -5;
-    }   
-  }
+      return FALSE;
+    }
+    return TRUE;
 }
 
-void encrypt(word x[2], word y[2], word key[keySize * T][2]) {
+
+int encrypt(word x[2], word y[2], word key[keySize * T][2]) {
+  //  word faulty = 0x00001000;
+  int truthVal = TRUE;
   for(int i = 0; i < T; ++i) {
+    /* Uncomment this for fault detection
+    if(i == 30) {
+      y[firstHalf] ^= faulty; 
+    }
+    */
     word tmp[2] = {x[firstHalf], x[secondHalf]};
-    word oneS[2]; S(x,oneS,1);
-    word twoS[2]; S(x,twoS,2);
-    word eightS[2]; S(x, eightS, 8);
-    
+    word oneS[2]; truthVal &= S(x,oneS,1);
+    word twoS[2]; truthVal &= S(x,twoS,2);
+    word eightS[2]; truthVal &= S(x, eightS, 8);
     word term2[2];
     word term3[2];
-    xor(twoS, key[i], term3); // term3 = S(x,2) ^ key[i]
-    and(oneS, eightS, term2); // term2 = S(x,1) & S(x,8)
-    xor(term2, term3, term2); // term2 = (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
-    xor(y, term2, x);         // x = y ^ (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
+    truthVal &= xor(twoS, key[i], term3); // term3 = S(x,2) ^ key[i]
+    truthVal &= and(oneS, eightS, term2); // term2 = S(x,1) & S(x,8)
+    truthVal &= xor(term2, term3, term2); // term2 = (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
+    truthVal &= xor(y, term2, x);         // x = y ^ (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
     y[firstHalf] = tmp[firstHalf];
     y[secondHalf] = tmp[secondHalf];
+
+    if(!truthVal) {
+      return FALSE;
+    }
   }
+  return TRUE;
 }
 
 
-void decrypt(word x[2], word y[2], word key[keySize * T][2]){
+int decrypt(word x[2], word y[2], word key[keySize * T][2]){
+  //  word faulty = 0x00001000;
+  int truthVal = TRUE;
   for(int i = T - 1; i >= 0 ; --i) {
     word tmp[2] = {x[firstHalf], x[secondHalf]};
-    word oneS[2]; S(y,oneS,1);
-    word twoS[2]; S(y,twoS,2);
-    word eightS[2]; S(y, eightS, 8);
+    word oneS[2]; truthVal &= S(y,oneS,1);
+    word twoS[2]; truthVal &= S(y,twoS,2);
+    word eightS[2]; truthVal &= S(y, eightS, 8);
 
     word term2[2];
     word term3[2];
     
     x[firstHalf]  = y[firstHalf];
     x[secondHalf] = y[secondHalf];
-    xor(tmp, key[i], term2);  // term2 = tmp ^ key[i]
-    xor(term2, twoS, term2);  // temp2 = tmp ^ key[i] ^ S(y,2)
-    and(oneS, eightS, term3); // temp3 = S(y,1) & S(y,8)
-    xor(term2, term3, y);     // y = tmp ^ key[i] ^ S(y,2) ^ (S(y,1) & S(y,8))
+    truthVal &= xor(tmp, key[i], term2);  // term2 = tmp ^ key[i]
+    truthVal &= xor(term2, twoS, term2);  // temp2 = tmp ^ key[i] ^ S(y,2)
+    truthVal &= and(oneS, eightS, term3); // temp3 = S(y,1) & S(y,8)
+    truthVal &= xor(term2, term3, y); // y = tmp ^ key[i] ^ S(y,2) ^ (S(y,1) & S(y,8))
+    if(!truthVal) {
+      return FALSE;
+    }
   }
+  return TRUE;
 }
 
 
