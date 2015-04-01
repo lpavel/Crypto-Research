@@ -23,11 +23,11 @@
 \title{Balanced Encoding of a Lightweight Cipher on an ARM Processor}
 
 
-\author{\IEEEauthorblockN{Laurentiu Pavel, Julian R Moore
+\author{\IEEEauthorblockN{Laurentiu Pavel
 }
 \IEEEauthorblockA{Worcester Polytechnic Institute, 
 Worcester, MA 01609, USA\\
-Email: \texttt{\{lpavel, jrmoore\}@wpi.edu}
+Email: \texttt{\{lpavel\}@wpi.edu}
 }}
 \maketitle
 
@@ -69,19 +69,53 @@ We will stick to the following timeline (updated based on our project):
 
 \section{Background}\label{sec:background}
 
-In the second part of the 90's, it became obvious that hardware related cryptanalysis is very powerful and can break some mathematically strong ciphers by measuring hardware characteristics such as time, power consumption, temperature, etc. Kocher introduced the Timing Attack in 1996 ~\cite{KocherTiming} and then the more powerful Differential Power Analysis in 1999 ~\cite{KocherDPA} , reason why cryptography needed to be thought in such a way that physical access to a device does not allow Side Channel Attacks the possibility of discovering the key of the cipher.
+\subsection{Side Channel Attacks}
 
-There are several approaches to protect agains SCA, most of them not trying to reduce the leakage, but making it unexploitable by randomizing it, some of the more popular ones being shuffling ~\cite{WangShuffling} , random delays ~\cite{CoronRandomDelays} , etc. Another interesting approach is presented in ~\cite{BEPrince} and ~\cite{ServantAES} where the aim is to obatin constant leakage during all the operations of the cipher which does not allow an attacker to gather same information when phyiscally attacking it which is not exploitable. The idea behind both of them is to use a bigger number of bits to represent the numbers in such a way that the Hamming Weight will always be constant and therefore not exploitable. Moreover, in ~\cite{BEPrince} it is presented an encoding of the Prince cipher that obatins constant leakage on the Hamming Distance Model as well.
+In the second part of the 90's, it became obvious that hardware related cryptanalysis is very powerful and can break some mathematically strong ciphers by measuring hardware characteristics such as time, power consumption, temperature, etc. Kocher introduced the Timing Attack in 1996 ~\cite{KocherTiming} and then the more powerful Differential Power Analysis in 1999 ~\cite{KocherDPA} , reason why cryptography needed to be thought in such a way that physical access to a device does not allow Side Channel Attacks the possibility of discovering the key of the cipher. Another very powerful Side Channel Attack family is Cache Attacks introduced in \cite{Boneau} by Boneau et al. These attacks do not require entire physical access to the device, but it only needs to measure the time required for the computations. At the moment the field is very popular since there is no cipher that does not have any attack proven to work against it. 
 
-The good results of the constant leakage implementation served us as a motivation for further investigation. It is obvious that an encoding that uses more bits will need to use much more memory that may not be available in most platforms. Ciphers such as AES consisting of large Sboxes and other complex operations such as matrix multiplications suffer big losses in terms of speed, but especially in terms of memory. Using an encoding that doubles the number of bytes would transform the AES Sbox from $16 \times 16 = 256$ 1-byte numbers ($=256$B), into a $32 \times 32 = 1024$ 2-byte numbers ($\approx2$KB) which is already more memory than most low-priced microcontrollers have. For instance, in the much smarter implementation of AES presented in ~\cite{ServantAES} , the speed loss has a factor of 4.2, but the memory loss has a factor of 8.57, which shows how challenging it is to obtain good performance on traditional ciphers.
+\subsection{Countermeasures for Side Channel Attacks}
+
+There are several approaches to protect agains SCA, most of them not trying to reduce the leakage, but making it unexploitable by randomizing it, some of the more popular ones being shuffling ~\cite{WangShuffling} , random delays ~\cite{CoronRandomDelays} , etc. Another interesting approach is presented in ~\cite{BEPrince} and ~\cite{ServantAES} where the aim is to obatin constant leakage during all the operations of the cipher which does not allow an attacker to gather same information when phyiscally attacking it which is not exploitable. The idea behind both of them is to use a bigger number of bits to represent the numbers in such a way that the Hamming Weight will always be constant and therefore not exploitable. Moreover, in ~\cite{BEPrince} it is presented an encoding of the Prince cipher that obatins constant leakage on the Hamming Distance Model as well. However, although this implementations reduce the leakage in models such as Hamming Distance or Hamming Weight, there are still other models such as Most Significant Bit that should still leak information.
+
+The results of the constant leakage implementation served as a motivation for further investigation. It is obvious that an encoding that uses more bits will need to use much more memory that may not be available in most platforms. Ciphers such as AES consisting of large Sboxes and other complex operations such as matrix multiplications suffer big losses in terms of speed, but especially in terms of memory. Using an encoding that doubles the number of bytes would transform the AES Sbox from $16 \times 16 = 256$ 1-byte numbers ($=256$B), into a $32 \times 32 = 1024$ 2-byte numbers ($\approx2$KB) which is already more memory than most low-priced microcontrollers have. For instance, in the much smarter implementation of AES presented in ~\cite{ServantAES} , the speed loss has a factor of 4.2, but the memory loss has a factor of 8.57, which shows how challenging it is to obtain good performance on traditional ciphers.
 
 In this paper we investigate whether constant leakage implementation on lightweight ciphers are feasable. We chose to implement Simon ~\cite{Beaulieu_Simon} which has very small memory requirements on a Stellaris LM3S8962. Since the board offers 256-KB Flash and 64-KB SRAM, memory will be sufficient for many different encodings. The goal is to implement 2 versions of Simon: Simon 64/128 (64-bit block size and 128-bit key size) and Simon 128/128 (128-bit block size and 128-bit key size) in 3 different ways: one unprotected implementation, one implementation that offers constant Hamming Weight leakage, and lastly one implementation that offers both constant Hamming Weight and constant Hamming Distance leagake. In the end we want to compare the leakages among the three implementations along with a comparrison of the memory and speed performance in each case.
 
 \section{Work Description}
 
-Simon Cipher ~\cite{Beaulieu_Simon} is a Feistel cipher consisting in the following operations: bitwise XOR, $\oplus$ ; bitwise AND, $\And$ ; left circular shift S by j bits, $S^j$ . Unlike AES, Simon does not contain complicated operations like S-box or Mix Columns reason why its operations are cheaper in both memory and run time. Because Simon has been designed to be a good candidate for different platforms that may have more or less resources and may need to be very secure or not that secure, multiple versions that operate on different block sizes and key sizes of the cipher have been introduced. The first implementation used in this study is Simon64/128. It consists in a block size of 64 bits, word size of 32 bits, and key size of 128 bits. In this implementation, the Feistel operations are being performed in 44 rounds. The second implementation used in this study is Simon128/128 which consists in a block size of 128 bits, word size of 64 bits, and key size of 128 bits.
+\subsection{Simon Cipher}
 
-In 2011, Hoogvorst et al.  ~\cite{Hoogvorst} proposed in 2011 a Software Countermeasure to protect against Side Channel Attacks. The main idea is to map every bit such that it will always be represented by a 1 and a 0. For example 1 $\rightarrow$ 10 and 0 $\rightarrow$ 01. This representation assures constant Hamming Weight since all numbers will contain the same number of 0s and 1s. Moreover, another advantage of this representation is that it can easily detect faults since it is obvious that no number should be represented as 2 0s or 2 1s. In the papers ~\cite{BEPrince} and ~\cite{ServantAES}, different type of encodings that maintain constant Hamming Weight have been used to better fit the cipher. The reason why we chose the regular encoding presented in the beginning of the paragraph is because Simon has a circular shift operation which not only that would be much harder to implement if all the bits are not kept together and in order, but in the simple version a rotation $S^{2j}$ would give the right result and also always transfer a value that has constant Hamming Weight.
+Simon Cipher ~\cite{Beaulieu_Simon} is a Feistel cipher consisting in the following operations: bitwise XOR, $\oplus$ ; bitwise AND, $\And$ ; left circular shift S by j bits, $S^j$ . Unlike AES, Simon does not contain complicated operations like S-box or Mix Columns reason why its operations are cheaper in both memory and run time. Because Simon has been designed to be a good candidate for different platforms that may have more or less resources and may need to be very secure or not that secure, multiple versions that operate on different block sizes and key sizes of the cipher have been introduced.
+
+Obeying the Fiestel cipher design, for every round i, the plaintext is split into 2 words $x_{i}$ and $x_{i+1}$. The initial key is also expanded into T different keys that will be used for each of the round. As presented in \cite{Beaulieu_Simon} , the transformation of the blocks into a new round is done the following way:
+$R_{i}(x_{i}, x_{i+1}) = (x_{i+1} \oplus f(x_{i}) \oplus k_{i}, x)$, where
+$f(x) = S(x) \And S^{8}(x) \oplus S^{2}(x)$ and $k_{i}$ is the key used for the $i^{th}$ round. For decription, the transformation is done in the following way:
+$R_{k}^{-1}(x_{i}, x_{i+1}) = (x_{i+1}, x \oplus f(x_{i+1}) \oplus k_{i})$
+The key expansion mentioned earlier is done in the following way:
+
+\small
+\begin{equation}
+  k_{i+m} =
+  \left\{
+  \begin{array}{ll}
+    c \oplus (z_{j})_{i} \oplus k_{i} \oplus (I \oplus S^{-1})S^{-3}k_{i+1} & \mbox{, if } m = 2 \\
+    c \oplus (z_{j})_{i} \oplus k_{i} \oplus (I \oplus S^{-1})S^{-3}k_{i+2} & \mbox{, if } m = 3 \\
+    c \oplus (z_{j})_{i} \oplus k_{i} \oplus (I \oplus S^{-1})(S^{-3}k_{i+2} \oplus k_{i+1}) & \mbox{, if } m = 4 \\
+  \end{array}
+  \right.
+\end{equation}
+\normalsize
+
+where $(z_{j})_{i}$ is a binary value of a matrix in which line j depends on the cipher used and i corresponds to the round.
+
+\subsection{Balanced Encoding}
+
+The regular binary encoding used by all machines leak information. The Hamming Weight (HW) is defined as the number of non-zero symbols in a representation ($HW(980802_{10}) = 4$ , $HW(1001101_{b}) = 4$). It is obvious that in the binary representation used by the hardware to store and compute, it is very likely that the two 64-bit numbers used for the operations will have different Hamming Weights which will leak information.
+
+In 2011, Hoogvorst et al.  ~\cite{Hoogvorst} proposed in 2011 a Software Countermeasure to protect against Side Channel Attacks. The main idea is to map every bit such that it will always be represented by a 1 and a 0. For example 1 $\rightarrow$ 10 and 0 $\rightarrow$ 01. This representation assures constant Hamming Weight since all numbers will contain the same number of 0s and 1s. Also, if the hardware support zeroing the registers before every operation on them, this implementation would result into a constant Hamming Distance since the distance for writes on the register will always be equal to the Hamming Weight. Moreover, another advantage of this representation is that it can easily detect faults since it is obvious that no number should be represented as 2 0s or 2 1s. In the papers ~\cite{BEPrince} and ~\cite{ServantAES}, different type of encodings that maintain constant Hamming Weight have been used to better fit the cipher. The reason why we chose the regular encoding presented in the beginning of the paragraph is because Simon has a circular shift operation which not only that would be much harder to implement if all the bits are not kept together and in order, but in the simple version a rotation $S^{2j}$ would give the right result and also always transfer a value that has constant Hamming Weight.
+
+The first implementation used in this study is Simon64/128. It consists in a block size of 64 bits, word size of 32 bits, and key size of 128 bits. In this implementation, the Feistel operations are being performed in 44 rounds. The second implementation used in this study is Simon128/128 which consists in a block size of 128 bits, word size of 64 bits, and key size of 128 bits.
+
 
 It is important to be mentioned that this encoding does not offer constant Hamming Distance between terms and results. In ~\cite{BEPrince} , the authors managed to write the operations of the Prince Cipher such that they offer a constant Hamming Distance. In our case, in order to receive a constant Hamming Distance, the registers could be zeroed before operations are done to them.
 
