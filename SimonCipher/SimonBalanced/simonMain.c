@@ -22,13 +22,13 @@ int main() {
 #elif (WORDSIZE == 64)
   readKeyBlock64(key, block);
 #endif
-
+  /*
   printBlockInitialBits(block, "initial block");
   printBlockInitialBits(key, "initial key");
-  transformKeyBlock(key, block);
-  printBlockDoubleBits(block, "initial Transformed block");
+  */  transformKeyBlock(key, block);
+  /*printBlockDoubleBits(block, "initial Transformed block");
   printBlockDoubleBits(key, "initial Transformed key");
-  
+  */
   if(keyExpansion(key) == FALSE) {
     printf("Fault Detected\n");
     return -1; // detect a fault and abandon everything
@@ -38,13 +38,15 @@ int main() {
     printf("Fault Detected\n");
     return -1; // detect a fault and abandon everything
   }
-  printBlockDoubleBits(block, "encrypted");
-
+  //  printBlockDoubleBits(block, "encrypted");
+  printf("%llx %llx %llx %llx \n",
+	 block[0][1], block[0][0],
+	 block[1][1], block[1][0]);
   if(decrypt(block[0], block[1], key) == FALSE) {
     printf("Fault Detected\n");
     return -1; // detect a fault and abandon everything    
   }
-  printBlockDoubleBits(block, "decrypted");
+  //  printBlockDoubleBits(block, "decrypted");
   
   return 0;
 }

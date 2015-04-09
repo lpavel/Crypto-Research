@@ -19,7 +19,7 @@ void readKeyBlock32(word key[][2], word block[][2]);
 void readKeyBlock64(word key[][2], word block[][2]);
 
 int keyExpansion(word key[][2]);
-int S(word w[2], word dest[2], int pos);
+void S(word w[2], word dest[2], int pos);
 
 void transformKeyBlock(word key[][2], word block[][2]);
 
@@ -29,9 +29,9 @@ void printBlockInitialBits(word block[][2], char* status);
 void printBlockDoubleBits (word block[][2], char* status);
 
 word getBitAt(word x, word i);
-int and(word x[2], word y[2], word dest[2]);
-int xor(word x[2], word y[2], word dest[2]);
-int not(word w[2], word dest[2]);
+void and(word x[2], word y[2], word dest[2]);
+void xor(word x[2], word y[2], word dest[2]);
+void not(word w[2], word dest[2]);
 word andWord(word x, word y);
 word xorWord(word x, word y);
 word notWord(word w);
