@@ -1,8 +1,9 @@
 \documentclass[conference]{IEEEtran}
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx,amsmath,amssymb,amsfonts}
 \usepackage{url}
 \usepackage{subfigure}
 \usepackage{booktabs,threeparttable,multirow}
+\usepackage{listings}
 
 % new math operators
 \DeclareMathOperator{\abs}{abs}
@@ -33,47 +34,56 @@ Email: \texttt{\{lpavel\}@wpi.edu}
 
 \begin{abstract}
 
-  The embedded devices that are used in our everyday life have a very big problem related to security. The fact that one has physical access to the device offers the possibility of side channel attacks, especially to power related leakage. This work investigates two implementations of Simon presented in ~\cite{Beaulieu_Simon} which is a lightweight cipher created to better suit less powerful devices. The first implementation is straight out of the book and the second one attempts to obtain a constant leakage that is not exploitable.
+  The embedded devices that are used in our everyday life have a very big problem related to security. The fact that one has physical access to the device offers the possibility of side channel attacks, especially to power related leakage. This work investigates two implementations of Simon presented in ~\cite{Beaulieu_Simon} which is a lightweight cipher created to better suit less powerful devices. The first implementation is straight out of the paper and the second one attempts to obtain a constant leakage that is not exploitable.
 
 \end{abstract}
 
 \section{Motivation}
 
-While the internet is taking over most of the devices people interact with, the concern of keeping information private becomes higher. Also small embedded devices need to have low costs and therefore do not have very high computational power. Lower frequencies in the devices are also easier to hack than higher frequency ones. The morivation of this work is to look for solutions that may be viable in the future that take in consideration this trend.
+While the internet is taking over most of the devices people interact with, the concern of keeping information private becomes higher. Also small embedded devices need to have low costs and therefore do not have very high computational power. Lower frequencies in the devices are also easier to hack than higher frequency ones. The morivation of this work is to look for solutions that take into consideration this trend and may be viable for the future.
 
-Small devices need ciphers that do not require very complex operations such as matrix multiplication in AES, and that also do not use very much memory such as the 16*16 bytes Sbox. Simon is one of the lightweight ciphers introduced by the NSA that could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in all operations.
+Small devices need ciphers that do not require very complex operations such as matrix multiplication in AES, and that also do not use very much memory such as the 16*16 bytes Sbox. Simon is one of the lightweight ciphers introduced by the NSA that could be used by many small devices in the future. Since it has been proven that Simon is vulnerable to Differential Power Analysis, the motivation of our work is to make an implementation of the cipher that is immune to Side Channel Attacks by achieving a constant leakage in the Hamming Weight model for all operations.
 
 The development kit used is a Stellaris LM3S8962 that has an ARM Cortex M3 processor that runs at 50MHz. Because Side Channel Attacks are much easier to be done at a lower frequency, it was decided to use the board at a 3.125MHz clock rate. The motivation for choosing this platform was the popularity of ARM processors that are nowadays used in a very wide variety of products because of their very low power consumption.
 
 List of goals:
 \begin{itemize}
-        \item Provide an implementation that achieves constant Hamming Weight 
-        \item Perform side channel attacks on both implementations and check results.
+\item Provide an implementation that achieves constant Hamming Weight
+\item Provide an implementation that is resistant to DFA
+\item Verify the leakage of the protected implementation
+\item Investigate the performance of the protected implementation
 \end{itemize}
 
-\section{Background}\label{sec:background}
+\section{Background}
 
 \subsection{Side Channel Attacks}
 
-In the second part of the 90's, it became obvious that hardware related cryptanalysis is very powerful and can break some mathematically strong ciphers by measuring hardware characteristics such as time, power consumption, temperature, etc. Kocher introduced the Timing Attack in 1996 ~\cite{KocherTiming} and then the more powerful Differential Power Analysis in 1999 ~\cite{KocherDPA} , reason why cryptography needed to be thought in such a way that physical access to a device does not allow Side Channel Attacks the possibility of discovering the key of the cipher. 
+In the second part of the 90's, it became obvious that hardware related cryptanalysis is very powerful and can break some mathematically strong ciphers by measuring hardware characteristics such as time, power consumption, temperature, etc. Kocher introduced the Timing Attack in 1996 ~\cite{KocherTiming} and then the more powerful Differential Power Analysis in 1999 ~\cite{KocherDPA} , reason why cryptography needed to be thought in such a way that physical access to a device does not allow Side Channel Attacks the possibility of discovering the key of the cipher. At the moment, this field is very popular since there is no cipher that does not have any attack proven to work against it.
 
-The Differential Fault Attack (DFA) introduced in \cite{Piret} is another very powerful attack that can easily reveal the key. Full access to low-powered device with knowledge of the implementation of the cipher makes DFA very powerful. The main idea behind this attack is that a fault introduced at a certain moment in time will spread enough so that the key can be obtained. As an intuitive explanation, think about introducing a fault that makes the ciphertext to be equal to 0 right before the last Xor with the key, then the final ciphertext will be the key (although in \cite{Piret} , the attack was introduced in a different cipher, Simon is also prone to this attack). Also to be mentioned that the encoding presented in this paper should protect against DFA. 
+The Differential Fault Attack (DFA) introduced in \cite{Piret} is another very powerful attack that can easily reveal the key. Full access to low-powered device with knowledge of the implementation of the cipher makes DFA very powerful. The main idea behind this attack is that a fault introduced at a certain moment in time will spread enough so that the key can be obtained. As an intuitive explanation, one can think about introducing a fault that makes the ciphertext to be equal to 0 right before the last Xor with the key, then the final ciphertext will be the key (although in \cite{Piret} , the attack was introduced in a different cipher, Simon is also prone to this attack). Also to be mentioned that the encoding presented in this paper should protect against DFA. 
 
-Another very powerful Side Channel Attack family is Cache Attacks introduced in \cite{Boneau} by Boneau et al. These attacks do not require entire physical access to the device, but it only needs to measure the time required for the computations. At the moment the field is very popular since there is no cipher that does not have any attack proven to work against it. The chip used in this study (ARM Cortex M3) does not have an internal cache, reason why this board is not prone to this family of attacks.
+Another very powerful Side Channel Attack family is Cache Attacks introduced in \cite{Boneau} by Boneau et al. These attacks do not require entire physical access to the device, but it only needs to measure the time required for the computations. The chip used in this study (ARM Cortex M3) does not have an internal cache, reason why this board is not prone to this family of attacks.
 
 \subsection{Countermeasures for Side Channel Attacks}
 
-There are several approaches to protect agains SCA, most of them not trying to reduce the leakage, but making it unexploitable by randomizing it, some of the more popular ones being shuffling ~\cite{WangShuffling} , random delays ~\cite{CoronRandomDelays} , etc. One of them that works fairly well is masking in which a state is randomized by mixing it with a random value that can be taken out once the encryption is over. However, this can also be attacked by a higher order DPA. The reason why this protection works decently is that higher level of masking makes the higher order DPA taking long enough so that it is basically unexploitable. Another interesting approach is presented in ~\cite{BEPrince} and ~\cite{ServantAES} where the aim is to obatin constant leakage during all the operations of the cipher which does not allow an attacker to gather information when phyiscally attacking it which is not exploitable. The idea behind both of them is to use a bigger number of bits to represent the numbers in such a way that the Hamming Weight will always be constant and therefore not exploitable. Moreover, in ~\cite{BEPrince} it is presented an encoding of the Prince cipher that obatins constant leakage on the Hamming Distance Model as well. However, although this implementations reduce the leakage in models such as Hamming Distance or Hamming Weight, there are still other models such as Most Significant Bit that should still leak information.
+There are several approaches to protect agains SCA, most of them not trying to reduce the leakage, but making it unexploitable by randomizing it, some of the more popular ones being shuffling ~\cite{WangShuffling} , random delays ~\cite{CoronRandomDelays} , etc. One of them that works fairly well is masking in which a state is randomized by mixing it with a random value that can be taken out once the encryption is over. However, this can also be attacked by a higher order DPA. The reason why this protection works decently is that higher level of masking makes the higher order DPA take long enough so that it becomes practically unexploitable. Another interesting approach is presented in ~\cite{BEPrince} and ~\cite{ServantAES} where the aim is to obatin constant leakage during all the operations of the cipher which does not allow an attacker to gather information when phyiscally attacking it which is not exploitable. The idea behind both of them is to use a bigger number of bits to represent the numbers in such a way that the Hamming Weight will always be constant and therefore not exploitable. Moreover, in ~\cite{BEPrince} it is presented an encoding of the Prince cipher that obatins constant leakage on the Hamming Distance Model as well. However, although this implementations reduce the leakage in models such as Hamming Distance or Hamming Weight, there are still other models that would still leak information.
 
-The results of the constant leakage implementation served as a motivation for further investigation. It is obvious that an encoding that uses more bits will need to use much more memory that may not be available in most platforms. Ciphers such as AES consisting of large Sboxes and other complex operations such as matrix multiplications suffer big losses in terms of speed, but especially in terms of memory. Using an encoding that doubles the number of bytes would transform the AES Sbox from $16 \times 16 = 256$ 1-byte numbers ($=256$B), into a $32 \times 32 = 1024$ 2-byte numbers ($\approx2$KB) which is already more memory than most low-priced microcontrollers have. For instance, in the much smarter implementation of AES presented in ~\cite{ServantAES} , the speed loss has a factor of 4.2, but the memory loss has a factor of 8.57, which shows how challenging it is to obtain good performance on traditional ciphers.
+The results of the constant leakage implementation served as a motivation for further investigation. It is obvious that an encoding that uses more bits will need to use much more memory that may not be available in most platforms. Ciphers such as AES consisting of large Sboxes and other complex operations such as matrix multiplications suffer big losses in terms of speed, but especially in terms of memory. Using an encoding that doubles the number of bytes would transform the AES Sbox from $2^{4} \times 2^{4} = 256$ 1-byte numbers ($=256$B), into a $2^{8} \times 2^{8} = 65KB$ 2-byte numbers ($\approx130$KB) which is already more memory than most low-priced microcontrollers have. For instance, in the much smarter implementation of AES presented in ~\cite{ServantAES} , the speed loss has a factor of 4.2, but the memory loss has a factor of 8.57, which shows how challenging it is to obtain good performance on traditional ciphers.
 
-In this paper we investigate whether constant leakage implementation on lightweight ciphers are feasable. We chose to implement Simon ~\cite{Beaulieu_Simon} which has very small memory requirements on a Stellaris LM3S8962. Since the board offers 256-KB Flash and 64-KB SRAM, memory will be sufficient for many different encodings. The goal is to implement 2 versions of Simon: Simon 64/128 (64-bit block size and 128-bit key size) and Simon 128/128 (128-bit block size and 128-bit key size) in 2 different ways: one unprotected implementation, and one implementation that offers constant Hamming Weight leakage. In the end we want to compare the leakages among the three implementations along with a comparrison of the memory and speed performance in each case.
+In this paper we investigate whether constant leakage implementation on lightweight ciphers are feasable. We chose to implement Simon ~\cite{Beaulieu_Simon} which has very small memory requirements on a Stellaris LM3S8962. Since the board offers 256-KB Flash and 64-KB SRAM, memory will be sufficient for many different encodings. The goal is to implement 2 versions of Simon: Simon 64/128 (64-bit block size and 128-bit key size) and Simon 128/128 (128-bit block size and 128-bit key size) in 2 different ways: one unprotected implementation, and one implementation that offers constant Hamming Weight leakage. In the end we want to make a comparrison of the memory and speed performance in all the implementations with more or less optimizations.
 
 \section{Work Description}
 
 \subsection{Simon Cipher}
 
-Simon Cipher ~\cite{Beaulieu_Simon} is a Feistel cipher consisting in the following operations: bitwise XOR, $\oplus$ ; bitwise AND, $\And$ ; left circular shift S by j bits, $S^j$ . Unlike AES, Simon does not contain complicated operations like S-box or Mix Columns reason why its operations are cheaper in both memory and run time. Because Simon has been designed to be a good candidate for different platforms that may have more or less resources and may need to be very secure or not that secure, multiple versions that operate on different block sizes and key sizes of the cipher have been introduced.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.3\textwidth]{SimonEncryption-crop.pdf}
+  \caption{Example of one Simon encryption scheme.} 
+  \label{fig:simon}
+\end{figure}
+
+Simon Cipher ~\cite{Beaulieu_Simon} is a Feistel cipher consisting of the following operations: bitwise XOR, $\oplus$ ; bitwise AND, $\And$ ; left circular shift S by j bits, $S^j$. One full round of a Simon encryption is shown in Fig.1 . Unlike AES, Simon does not contain complicated operations like S-box or Mix Columns reason why its operations are cheaper in both memory and run time. Because Simon has been designed to be a good candidate for different platforms that may have more or less resources and may need to be very secure or not that secure, multiple versions that operate on different block sizes and key sizes of the cipher have been introduced.
 
 Obeying the Fiestel cipher design, for every round i, the plaintext is split into 2 words $x_{i}$ and $x_{i+1}$. The initial key is also expanded into T different keys that will be used for each of the round. As presented in \cite{Beaulieu_Simon} , the transformation of the blocks into a new round is done the following way:
 $R_{i}(x_{i}, x_{i+1}) = (x_{i+1} \oplus f(x_{i}) \oplus k_{i}, x)$, where
@@ -93,7 +103,7 @@ The key expansion mentioned earlier is done in the following way:
   \right.
 \end{equation}
 
-, where: $cz_{j}k = c \oplus (z_{j})_{i} \oplus k_{i} \\ IS = I \oplus S^{-1}$
+, where: $cz_{j}k = c \oplus (z_{j})_{i} \oplus k_{i} ,\  IS = I \oplus S^{-1}$
 
 \normalsize
 
@@ -103,11 +113,11 @@ where $(z_{j})_{i}$ is a binary value of a matrix in which line j depends on the
 
 The regular binary encoding used by all machines leak information. The Hamming Weight (HW) is defined as the number of non-zero symbols in a representation ($HW(980802_{10}) = 4$ , $HW(1001101_{b}) = 4$). It is obvious that in the binary representation used by the hardware to store and compute, it is very likely that the two 64-bit numbers used for the operations will have different Hamming Weights which will leak information.
 
-In 2011, Hoogvorst et al.  ~\cite{Hoogvorst} proposed in 2011 a Software Countermeasure to protect against Side Channel Attacks. The main idea is to map every bit such that it will always be represented by a pair of a 1 and a 0: for example 1 $\rightarrow$ 10 and 0 $\rightarrow$ 01. This representation assures constant Hamming Weight since all numbers will contain the same number of 0s and 1s. Also, if the hardware support zeroing the registers before every operation on them, this implementation would result into a constant Hamming Distance since the distance for writes on the register will always be equal to the Hamming Weight. This could turn out to be significantly important since the Hamming Distance is also a powerful leakage model. Moreover, another advantage of this representation is that it can easily detect faults since it is obvious that no number should be represented as 2 0s or 2 1s. In the papers ~\cite{BEPrince} and ~\cite{ServantAES}, different type of encodings that maintain constant Hamming Weight have been used to better fit the cipher. The reason why we chose the regular encoding presented in the beginning of the paragraph is because Simon has a circular shift operation which not only that would be much harder to implement if all the bits are not kept together and in order, but in the simple version a rotation $S^{2j}$ would give the right result and also always transfer a value that has constant Hamming Weight.
+In 2011, Hoogvorst et al.  ~\cite{Hoogvorst} proposed in 2011 a Software Countermeasure to protect against Side Channel Attacks. The main idea is to map every bit such that it will always be represented by a pair of a 1 and a 0: for example 1 $\rightarrow$ 10 and 0 $\rightarrow$ 01. This representation assures constant Hamming Weight since all numbers will contain the same number of 0s and 1s. Also, if the hardware support zeroing the registers before every operation on them, this implementation would result into a constant Hamming Distance since the distance for writes on the register will always be equal to the Hamming Weight. This could turn out to be significantly important since the Hamming Distance is also a powerful leakage model. Moreover, another advantage of this representation is that it can easily detect faults since it is obvious that no number should contain two consecutive 0s or two consecutive 1s. In the papers ~\cite{BEPrince} and ~\cite{ServantAES}, different type of encodings that maintain constant Hamming Weight have been used to better fit the cipher. The reason why we chose the regular encoding presented in the beginning of the paragraph is because Simon has a circular shift operation which not only that would be much harder to implement if all the bits are not kept together and in order, but in the simple version a rotation $S^{2j}$ would give the right result and also always transfer a value that has constant Hamming Weight.
 
 \subsection{Implementation of Balanced Encoding on Simon}
 
-The first implementation used in this study is Simon64/128. It consists in a block size of 64 bits, a key size of 128 bits and a word size of 32 bits. In this implementation, the Feistel operations are being performed in 44 rounds. The second implementation used in this study is Simon128/128 which consists in a block size of 128 bits, a key size of 128 bits and a word size of 64 bits.
+The first implementation used in this study is Simon64/128. It consists in a block size of 64 bits, a key size of 128 bits and a word size of 32 bits. In this implementation, the Feistel operations are being performed in 44 rounds. The second implementation used in this study is Simon128/128 which consists in a block size of 128 bits, a key size of 128 bits and a word size of 64 bits consisting of 68 rounds.
 
 It is important to be mentioned that this encoding does not preserve a constant Hamming Distance unless the registers are zeroed before they are used. In ~\cite{BEPrince} , the authors managed to write the operations of the Prince Cipher such that they offer a constant Hamming Distance. In our case, in order to receive a constant Hamming Distance, the registers could be zeroed before operations are done on them.
 
@@ -151,7 +161,7 @@ The operation AND on balanced words is implemented similarly to XOR, the only di
 
 \begin{table}[htbp]
   \renewcommand{\arraystretch}{1.3}
-  \caption{XOR table.}
+  \caption{AND table.}
   \vspace{0.05 in}
   \label{tab:and2}
   \centering
@@ -166,8 +176,6 @@ The operation AND on balanced words is implemented similarly to XOR, the only di
 
 If the microcontroller can afford offering more space to get a speedup factor of $2^{i-1}$ compared to this implementation, then bigger table lookups can be used $2^{i} \times 2^{i}$. One such variant is 8 by 8 presented below:
 
-\todo{8 by 8 XOR, and 8 by 8 AND}
-
 
 The left circular shift is the only operation of the three used by Simon in which the first half and the second half need to interact with each other. However, at the highest level, the representation used allows us to perform a circular shift by 2j instead of j. One straightforward implementation is applying the circular shift by 2j on each balanced word. Then swap the first 2j bits between the first half and the second half of the word to obtain the result in the proper encoding. 
 
@@ -178,6 +186,60 @@ As presented in the beginning of the paper, this encoding allows protection agai
 One property of the tables is that any lookup where a group of bits is 00 or 11 will result into either 00 or 11. This propagation of the fault is easily exploitable at the end of the encryption just by counting the number of 1s and 0s in the words. If they are not equal, then a fault has been introduced and the operation is aborted so that the attacker will never see the ciphertext. However, if the attacker has more control over what fault he induces, this protection could be bypassed.
 
 \section{Results}
+
+\subsection{Leakage Analysis}
+
+The Leakage measurements have been done using MITRE's tool SLEAK (Side-channel Leakage Evaluator and Analysis Kit). This tool compiles the code into assembly and then looks at the registers that have dependencies and may leak information in the Hamming Weight model. For this project, the unprotected and the protected versions of the Simon128/128 have been analyzed. In the unprotected version using the out of the book implementation, 103 assembly instructions leaked. See table \ref{tab:unprotected} to see how many instructions are leaking for each function in Simon. Remember that the function S is the circular rotation function, Key Expenasion is the function that expands the key for all the rounds. The functions Encrypt and Decrypt are the ones that do the encryption and respectively the decription.
+
+\begin{table}[htbp]
+  \renewcommand{\arraystretch}{1.3}
+  \caption{Number of Hamming Weight leaky instructions}
+  \vspace{0.05 in}
+  \label{tab:unprotected}
+  \centering
+  \begin{tabular}{r|cccp{0.5in}}
+    Function & Number of leaky instructions \\ \hline
+    S  & 39 \\
+    Key Expansion & 18 \\
+    Encrypt & 23 \\
+    Decrypt & 23 \\
+  \end{tabular}
+\end{table}
+
+As it can be seen, the leakage is significant. Although the key expansion leakage is not important beacuse it can be precomputed and saved into hardware, the leakages of Encrypt, Decrypt and S show that the unprotected version of Simon is exposed to Side Channel Attacks.
+
+In the protected version, see table \ref{tab:protected} to see the functions that leak. The first four functions do the same as the ones in the previous table, but adapted for balanced encoding. The function expandEncoding expands a regular input into a balanced encoded output, the function getBitAt returns the value of a particular bit, andWord and xorWord take 2 balanced encoded words and returns the result of the operation, verifyFault counts the number of 0s and 1s in order to identify a fault, and transformKeyBlock transforms the key and the blocks into a balanced encoded key and balanced encoded blocks. 
+
+\begin{table}[htbp]
+  \renewcommand{\arraystretch}{1.3}
+  \caption{Number of Hamming Weight leaky instructions}
+  \vspace{0.05 in}
+  \label{tab:protected}
+  \centering
+  \begin{tabular}{r|cccp{0.5in}}
+    Function & Number of leaky instructions & Additional info \\ \hline
+    S  & 0 \\
+    Key Expansion & 0 \\
+    Encrypt & 0 \\
+    Decrypt & 0 \\
+    expandEncoding & 4 \\
+    getBitAt & 5 & called form encrypt \\
+    andWord & 1 & called form encrypt \\
+    verifyFault & 4 & called form encrypt \\
+    xorWord & 1 & called form encrypt \\
+    transformKeyBlock& 11
+  \end{tabular}
+\end{table}
+
+As it can be seen from the results, the leakage is significantly weaker (almost inexistent). The first function that leaks is transformKeyBlock which uses expandEncoding. This leakage is not that important because the key can be precomputed. Moreover, the leakage of the block expansion is not important because the function is called only in the beginning when the input (known by the attacker) is not key dependent, which makes it not exploitable. The functions getBitAt and verifyFault are also not very important because the only time this operation is done is after the encryption is over, before giving the results.
+
+However, a significant leakage that can be exploited occurs in andWord and xorWord. Looking in the assembly it was found that the leakage occurs at the table lookup on an add operation which seems to be due to a compiler optimization of the lookup. The line of C code that leaks is the following (the function getBitsAt(x,i) returns the 2 bits of x at position i (the bit i and i+1)):
+\begin{lstlisting}
+  word val = andLookup[getBitsAt(x1,2*i)]
+                      [getBitsAt(x2,2*i)];
+\end{lstlisting}
+
+More precisely, in assembly it leaks right before the value in the right hand side is loaded into val. That leads to the conclusion that the leak comes from the lookup.
 
 \subsection{Performance}
 
@@ -200,7 +262,9 @@ Here we present the time taken per encryption for each of our implementations:
   \end{tabular}
 \end{table}
 
-It is obvious from the table that the balanced implementations are significantly slower.
+These measurements were obtained using the following oscilloscope: Agilent Technologies MSO6012A.
+
+It is obvious from the table that the balanced implementations are significantly slower. Keeping in mind that the clock frequency was set at 3.125 MHz in this implementation, 90 ms could still be acceptable for a device. Many boards(including the one on which the measurements were taken) can easily be used at 50 MHz which brings the slowest implementation to be about 6ms which is probably fast enough for most tasks microcontrollers may need to perform.
 
 The relative decrease in speed compared to the regular implementation is shown here:
 
@@ -217,7 +281,42 @@ The relative decrease in speed compared to the regular implementation is shown h
   \end{tabular}
 \end{table}
 
+As it can be seen, the decrease in time is enormous for all the cases. Another expected behavior is the speedup of almost 2 obtained in the implementation with 4 bit lookups compared to implementation with 2 bit lookups. This encourages the use of the faster implementation if there is enough memory on the device.
 
+The reason why the decrease in speed is so high is because Simon is optimized for hardware. For example, one round of the encryption in the regular implementation in C looks in the following way:
+\begin{lstlisting}
+  word tmp = x1;
+  x1 = x2 ^ (S(x,1) & S(x,8)) ^
+       S(x,2) ^ key[i];
+  x2 = tmp;
+\end{lstlisting}
+where we define S(x,i) = $S^{i}x$
+
+In a balanced implementation, this bitwise operations cannot be done at the same time. Since all the bitwise operations had to be redefined and done with lookups in order to decrease the leakage, the 2nd line of the previous code needs to be done in 4 operations. One round of encryption in the balanced encoding in C looks in the following way:
+\begin{lstlisting}
+  word tmp[2];
+  tmp[firstHalf] = x[firstHalf];
+  tmp[secondHalf] = x[secondHalf];
+  S(x,oneS,1);
+  S(x,twoS,2);
+  S(x, eightS, 8);
+  xor(twoS, key[i], term3);
+  // term3 = S(x,2) ^ key[i]
+  and(oneS, eightS, term2);
+  // term2 = S(x,1) & S(x,8)
+  xor(term2, term3, term2);
+  // term2 = (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
+  xor(y, term2, x);
+  // x = y ^ (S(x,1) & S(x,8)) ^ S(x,2) ^ key[i]
+  y[firstHalf] = tmp[firstHalf];
+  y[secondHalf] = tmp[secondHalf];
+\end{lstlisting}
+where we define S(x,y,i) as $ y = S^{i}x$ , xor(a,b,c) as $ c = a \oplus b $,
+and(a,b,c) as $c = a \And b$
+
+As it can be seen above, there are many more instructions to be executed in each round of the encryption. Moreover, each operations has to deal with twice as many bits as in the regular encryption. Also, another factor that contributes to this delay is the fault checking that is being done after the encryption is over. This check goes through all the bits to count the number of 0s and 1s.
+
+Another important aspect of the usability of this encryption scheme is the memory used. The following two tables contain the memory used by each of the implementations. These measurements were done by compiling only the cipher with the only include in C being stdint.h .
 
 \begin{table}[htbp]
   \renewcommand{\arraystretch}{1.3}
@@ -246,12 +345,33 @@ The relative decrease in speed compared to the regular implementation is shown h
   \end{tabular}
 \end{table}
 
+As it can be seen, the maximum flash memory used by a balanced implementation is 6.454 KBytes. Nowadays flash memory is cheap and most boards nowadays and in the future would probably have at least 50KBytes of flash (recall that the board used in this study has 256 KBytes Flash). The maximum SRAM that is needed for this encryption is 13.172 KBytes. For most modern microcontrollers, this amount of memory is definitely supportable. In the case of the Stellaris LM3S8962, it represents only about 20\% of the total SRAM provided. However, if the microcontroller does not support this much SRAM memory, one of the other versions should probably be low enough to be usable.
 
-As it can be seen dfgsdfg dsfg dfg 
+One important mention is that the more efficient 4-bit lookup implementation increases the memory by less than the memory increases from the regular encoding to the 2-bit balanced implementation. This would not be the case for gowing to a faster 8-bit lookup implementation. For 8 bits the size of the lookup table  would be
+$2^{8} \times 2^{8} \times 1 = 65 KBytes$.
+This is a significant number for the memory that many boards cannot support. For instance, the board used in this study has a total SRAM memory of 65KBytes and it would all need to be used only for this lookup. Therefore, faster implementations become exponentially more expensive in memory.
 
+\subsection{Fault detection}
+
+In this paper, the DFA is simulated in software. During the execution of the ciphers, a fault is induced at random. In the unprotected implementation, just by zeroing the first byte of the block before the xoring with the key, we managed to obtain the first byte of the key at round T.
+
+In the balanced encoding, we tested the attacks that: flips one bit at random, zeroes on byte and modifies one byte with a random value. As expected, the first 2 attacks did not go through but the last one sometimes does. The mathematical probability for the 3rd attack to pass is $\dfrac{1}{16}$ since there are only 16 valid numbers out of the 256 that can be represented by 8 bits. Therefore, although it is not entirely secure and some DFAs may still go through, this implementation is more secure than the regular one.
+
+\section{Future Work}
+
+Something that was not investigated in this paper is how performance changes based on the characteristics of the ciphers. In theory, the balanced encoding of the most secure cipher Simon128/256 should be about as fast as the one for Simon128/128 because the performance should be mostly affected by the block size if the key is computed only once and then saved.
+
+Another very important followup of this work is solving the leakage on the table lookup which would make the protected encoding not leak any important information at all.
+
+Another performance investigation important to be done is implementing a balanced encoding on a cipher that is software optimized instead of hardware optimized. For example, this implementation on a software like Speck may behave much better.
+
+The code used in this study is available on github at the follwing link:\\
+https://github.com/lpavel/Crypto-Research
 
 \section{Conclusion}
-\todo{TBD last}
+
+The conclusion of this study is that a software balanced encoding version of Simon can be further investigated. The level of security of the protected implementation is significantly higher than the unprotected implementaion. As of now, the results suggests that the cipher can be used on low-power applications that need extra protection. The memory needed for the balanced encoding is easily available by almost all of the microcontrollers. Although the decrease in speed is significant, the time taken by the operations is acceptable for microcontrollers that have a clock frequency of at least 50MHz, which is also fairly accesible at the moment.
+
 
 
 
